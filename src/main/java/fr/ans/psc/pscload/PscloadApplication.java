@@ -1,5 +1,6 @@
 package fr.ans.psc.pscload;
 
+import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,16 +14,20 @@ public class PscloadApplication {
 	@Autowired
 	private final PscRestApi pscRestApi;
 
-	@Value("${ps.put.url}")
-	private String psPutUrl;
+	@Autowired
+	private final JsonFormatter jsonFormatter;
 
-	public PscloadApplication(PscRestApi pscRestApi) {
+	@Value("${ps.api.base.url}")
+	private String apiBaseUrl;
+
+	public PscloadApplication(PscRestApi pscRestApi, JsonFormatter jsonFormatter) {
 		this.pscRestApi = pscRestApi;
+		this.jsonFormatter = jsonFormatter;
 	}
 
 	@RabbitListener(queues = "${queue.name}")
-	public void listen(String in) {
-		pscRestApi.putPs(psPutUrl, in);
+	public void listen(String message) {
+		pscRestApi.put(apiBaseUrl, jsonFormatter.psFromMessage(message));
 	}
 
 	public static void main(String[] args) {
