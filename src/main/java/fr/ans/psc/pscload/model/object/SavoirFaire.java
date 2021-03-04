@@ -3,8 +3,6 @@ package fr.ans.psc.pscload.model.object;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
-import java.util.Map;
 import java.util.Objects;
 
 public class SavoirFaire implements Serializable {
@@ -22,9 +20,9 @@ public class SavoirFaire implements Serializable {
         this.code = items[19];
     }
 
-    public Map.Entry<String, SavoirFaire> getEntry() {
-        String expertiseKey = Objects.toString(categoryCode + code, "");
-        return new AbstractMap.SimpleEntry<>(expertiseKey, this);
+    public String getKey() {
+        return Objects.toString(code, "") +
+                Objects.toString(categoryCode, "");
     }
 
     @Override

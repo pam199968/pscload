@@ -1,9 +1,14 @@
 package fr.ans.psc.pscload.component;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
+import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
+import fr.ans.psc.pscload.model.object.SavoirFaire;
+import fr.ans.psc.pscload.model.object.SituationExercice;
 import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Type;
+import java.util.List;
 
 /**
  * The type Psc rest api.
@@ -26,8 +31,29 @@ public class JsonFormatter {
      * Instantiates a JsonFormatter.
      */
     public JsonFormatter() {
-        GsonBuilder builder = new GsonBuilder().disableHtmlEscaping();
-        this.gson = builder.create();
+        this.gson = new GsonBuilder().disableHtmlEscaping()
+                .registerTypeHierarchyAdapter(List.class, new CollectionAdapter()).create();
+    }
+
+    static class CollectionAdapter implements JsonSerializer<List<?>> {
+        @Override
+        public JsonElement serialize(List<?> src, Type typeOfSrc, JsonSerializationContext context) {
+            if (src == null || src.isEmpty()) // exclusion is made here
+                return null;
+
+            JsonArray array = new JsonArray();
+
+            for (Object child : src) {
+                if ((child instanceof SavoirFaire && ((SavoirFaire) child).getKey().equals("")) ||
+                        (child instanceof SituationExercice && ((SituationExercice) child).getKey().equals(""))) {
+                    // do nothing
+                } else {
+                    JsonElement element = context.serialize(child);
+                    array.add(element);
+                }
+            }
+            return array;
+        }
     }
 
     /**
@@ -39,17 +65,17 @@ public class JsonFormatter {
     public String psFromMessage(String message) {
         String[] items = message.split("\\|", -1);
         Professionnel ps = new Professionnel(items);
-        return psFromObject(ps);
+        return jsonFromObject(ps);
     }
 
     /**
-     * Ps from object string.
+     * Json from object string.
      *
-     * @param ps the ps
+     * @param o the object
      * @return the string
      */
-    public String psFromObject(Professionnel ps) {
-        return gson.toJson(ps);
+    public String jsonFromObject(Object o) {
+        return gson.toJson(o);
     }
 
     /**
@@ -74,4 +100,13 @@ public class JsonFormatter {
         return gson.toJson(new Professionnel(ps));
     }
 
+    /**
+     * Naked ex pro from object string.
+     *
+     * @param exPro the ex pro
+     * @return the string
+     */
+    public String nakedExProFromObject(ExerciceProfessionnel exPro) {
+        return gson.toJson(new ExerciceProfessionnel(exPro));
+    }
 }

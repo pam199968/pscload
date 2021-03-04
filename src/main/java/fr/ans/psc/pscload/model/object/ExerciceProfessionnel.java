@@ -23,10 +23,10 @@ public class ExerciceProfessionnel implements Serializable {
     private String firstName;
 
     @JsonProperty("expertises")
-    private Map<String, SavoirFaire> expertises = new HashMap<>();
+    private List<SavoirFaire> expertises = new ArrayList<>();
 
     @JsonProperty("workSituations")
-    private Map<String, SituationExercice> workSituations = new HashMap<>();
+    private List<SituationExercice> workSituations = new ArrayList<>();
 
     public ExerciceProfessionnel() {}
 
@@ -36,34 +36,32 @@ public class ExerciceProfessionnel implements Serializable {
         this.salutationCode = items[15];
         this.lastName = items[16];
         this.firstName = items[17];
-        Map.Entry<String, SavoirFaire> expertise = new SavoirFaire(items).getEntry();
-        this.expertises.put(expertise.getKey(), expertise.getValue());
-        Map.Entry<String, SituationExercice> situation = new SituationExercice(items).getEntry();
-        this.workSituations.put(situation.getKey(), situation.getValue());
+        this.expertises.add(new SavoirFaire(items));
+        this.workSituations.add(new SituationExercice(items));
     }
 
-    public Map.Entry<String, ExerciceProfessionnel> getEntry() {
-        String exProKey = Objects.toString(code + categoryCode, "");
-        return new AbstractMap.SimpleEntry<>(exProKey, this);
+    public ExerciceProfessionnel(ExerciceProfessionnel exPro) {
+        this.code = exPro.code;
+        this.categoryCode = exPro.categoryCode;
+        this.salutationCode = exPro.salutationCode;
+        this.lastName = exPro.lastName;
+        this.firstName = exPro.firstName;
     }
 
-    public Map<String, SavoirFaire> getExpertises() {
+    public String getKey() {
+        return Objects.toString(code, "") +
+                Objects.toString(categoryCode, "");
+    }
+
+    public List<SavoirFaire> getExpertises() {
         return expertises;
     }
 
-    public void setExpertises(Map<String, SavoirFaire> expertises) {
-        this.expertises = expertises;
-    }
-
-    public Map<String, SituationExercice> getWorkSituations() {
+    public List<SituationExercice> getWorkSituations() {
         return workSituations;
     }
 
-    public void setWorkSituations(Map<String, SituationExercice> workSituations) {
-        this.workSituations = workSituations;
-    }
-
-    public int naked() {
+    public int nakedHash() {
         return Objects.hash(code, categoryCode, salutationCode, lastName, firstName);
     }
 

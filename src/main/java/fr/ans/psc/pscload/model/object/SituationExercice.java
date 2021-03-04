@@ -3,8 +3,6 @@ package fr.ans.psc.pscload.model.object;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
-import java.util.Map;
 import java.util.Objects;
 
 public class SituationExercice implements Serializable {
@@ -34,9 +32,9 @@ public class SituationExercice implements Serializable {
         this.structure = new Structure(items);
     }
 
-    public Map.Entry<String, SituationExercice> getEntry() {
-        String situationKey = Objects.toString(modeCode + structure.getKey(), "");
-        return new AbstractMap.SimpleEntry<>(situationKey, this);
+    public String getKey() {
+        return Objects.toString(modeCode, "") +
+                Objects.toString(structure.getKey(), "");
     }
 
     @Override

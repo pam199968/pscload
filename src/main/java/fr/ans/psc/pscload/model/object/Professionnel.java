@@ -50,7 +50,7 @@ public class Professionnel implements Serializable {
     private String salutationCode;
 
     @JsonProperty("professions")
-    private Map<String, ExerciceProfessionnel> professions = new HashMap<>();
+    private List<ExerciceProfessionnel> professions = new ArrayList<>();
 
     public Professionnel() {}
 
@@ -73,8 +73,7 @@ public class Professionnel implements Serializable {
         this.email = items[11];
         this.salutationCode = items[12];
         if (deep) {
-            Map.Entry<String, ExerciceProfessionnel> exPro = new ExerciceProfessionnel(items).getEntry();
-            this.professions.put(exPro.getKey(), exPro.getValue());
+            this.professions.add(new ExerciceProfessionnel(items));
         }
     }
 
@@ -98,7 +97,7 @@ public class Professionnel implements Serializable {
         return nationalId;
     }
 
-    public Map<String, ExerciceProfessionnel> getProfessions() {
+    public List<ExerciceProfessionnel> getProfessions() {
         return professions;
     }
 

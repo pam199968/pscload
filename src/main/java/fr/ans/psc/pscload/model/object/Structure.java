@@ -113,7 +113,9 @@ public class Structure implements Serializable {
     }
 
     public String getKey() {
-        return Objects.toString(siteSIRET + siteSIREN + siteFINESS, "");
+        return Objects.toString(siteSIRET, "") +
+                Objects.toString(siteSIREN, "") +
+                Objects.toString(siteFINESS, "");
     }
 
     @Override

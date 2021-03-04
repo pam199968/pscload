@@ -3,13 +3,14 @@ package fr.ans.psc.pscload;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.univocity.parsers.common.ParsingContext;
 import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.model.object.*;
-import fr.ans.psc.pscload.model.object.response.PsListResponse;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -43,8 +45,28 @@ class PscloadApplicationTests {
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
 		PscRestApi pscRestApi = new PscRestApi();
-		PsListResponse psListResponse = pscRestApi.getPsList(url);
+		pscRestApi.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+//		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
+	}
+
+	@Test
+	@Disabled
+	void loadDbFromFileTest() {
+		String url = "http://localhost:8000/api/ps";
+		long startTime = System.currentTimeMillis();
+
+		Map<String, Professionnel> original = getPsHashMap("Extraction_PSC_20001.txt");
+		System.out.println(System.currentTimeMillis()-startTime);
+
+		PscRestApi pscRestApi = new PscRestApi();
+		JsonFormatter jsonFormatter = new JsonFormatter();
+
+		for (Professionnel ps : original.values()) {
+			pscRestApi.post(url, jsonFormatter.jsonFromObject(ps));
+		}
+
+		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
 	@Test
@@ -53,10 +75,10 @@ class PscloadApplicationTests {
 		String url = "http://localhost:8000/api/ps";
 		long startTime = System.currentTimeMillis();
 
-		Map<String, Professionnel> original = getPsHashMap("Extraction_PSC.txt");
+		Map<String, Professionnel> original = getPsHashMap("Extraction_PSC_20001.txt");
 		System.out.println(System.currentTimeMillis()-startTime);
 
-/*		Map<String, Professionnel> revised = getPsHashMap("Extraction_PSC_20002.txt");
+		Map<String, Professionnel> revised = getPsHashMap("Extraction_PSC_20002.txt");
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
@@ -64,11 +86,14 @@ class PscloadApplicationTests {
 		PscRestApi pscRestApi = new PscRestApi();
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
-//		diff.entriesOnlyOnLeft().forEach((k, v) -> pscRestApi.delete(url + '/' + v.getNationalId()));
-//		diff.entriesOnlyOnRight().forEach((k, v) -> pscRestApi.put(url, jsonFormatter.psFromObject(v)));
-//		diff.entriesDiffering().forEach((k, v) -> pscRestApi.diffUpdate(v.leftValue(), v.rightValue()));
+		diff.entriesOnlyOnLeft().forEach((k, v) ->
+				pscRestApi.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+		diff.entriesOnlyOnRight().forEach((k, v) ->
+				pscRestApi.post(url, jsonFormatter.jsonFromObject(v)));
+		diff.entriesDiffering().forEach((k, v) ->
+				pscRestApi.diffUpdatePs(v.leftValue(), v.rightValue()));
 
-		System.out.println(System.currentTimeMillis()-startTime);*/
+		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
 	@Test
@@ -77,13 +102,13 @@ class PscloadApplicationTests {
 		long startTime = System.currentTimeMillis();
 
 		//build simple lists of the lines of the two testfiles
-		Map<String, Professionnel> original = getPsHashMap("Extraction_PSC_100000.txt");
+		Map<String, Professionnel> original = getPsHashMap("Extraction_PSC.txt");
 		System.out.println(System.currentTimeMillis()-startTime);
-		serialisePsHashMapToFile(original, "Extraction_PSC_100000.ser");
+		serialisePsHashMapToFile(original, "Extraction_PSC.ser");
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		original.clear();
-		Map<String, Professionnel> des = deserialiseFileToPsHashMap("Extraction_PSC_100000.ser");
+		Map<String, Professionnel> des = deserialiseFileToPsHashMap("Extraction_PSC.ser");
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
@@ -96,26 +121,25 @@ class PscloadApplicationTests {
 				Professionnel newPs = new Professionnel(Arrays.asList(objects).toArray(new String[objects.length]));
 				Professionnel mappedPs = psMap.get(newPs.getNationalId());
 				if (mappedPs != null) {
-					Optional<Map.Entry<String, ExerciceProfessionnel>> exPro = newPs.getProfessions().entrySet().stream().findAny();
-					if (exPro.isPresent()) {
-						ExerciceProfessionnel mappedExPro = mappedPs.getProfessions().get(exPro.get().getKey());
-						if (mappedExPro != null) {
-							Optional<Map.Entry<String, SavoirFaire>> expertise = exPro.get().getValue().getExpertises().entrySet().stream().findAny();
-							if (expertise.isPresent()) {
-								if (!mappedExPro.getExpertises().containsKey(expertise.get().getKey())) {
-									mappedExPro.getExpertises().put(expertise.get().getKey(), expertise.get().getValue());
-								}
-							} // else do nothing
-							Optional<Map.Entry<String, SituationExercice>> situation = exPro.get().getValue().getWorkSituations().entrySet().stream().findAny();
-							if (situation.isPresent()) {
-								if (!mappedExPro.getWorkSituations().containsKey(situation.get().getKey())) {
-									mappedExPro.getWorkSituations().put(situation.get().getKey(), situation.get().getValue());
-								}
-							} // else do nothing
-						} else {
-							mappedPs.getProfessions().put(exPro.get().getKey(), exPro.get().getValue());
+					ExerciceProfessionnel exPro = newPs.getProfessions().get(0);
+					ExerciceProfessionnel mappedExPro =
+							mappedPs.getProfessions().stream().filter(exo -> exo.getKey().equals(exPro.getKey())).findAny().orElse(null);
+					if (mappedExPro != null) {
+						SavoirFaire expertise = exPro.getExpertises().get(0);
+						SavoirFaire mappedExpertise =
+								mappedExPro.getExpertises().stream().filter(expert -> expert.getKey().equals(expertise.getKey())).findAny().orElse(null);
+						if (mappedExpertise == null) {
+							mappedExPro.getExpertises().add(expertise);
 						}
-					} // else do nothing
+						SituationExercice situation = exPro.getWorkSituations().get(0);
+						SituationExercice mappedSituation =
+								mappedExPro.getWorkSituations().stream().filter(situ -> situ.getKey().equals(situation.getKey())).findAny().orElse(null);
+						if (mappedSituation == null) {
+							mappedExPro.getWorkSituations().add(situation);
+						}
+					} else {
+						mappedPs.getProfessions().add(exPro);
+					}
 				} else {
 					psMap.put(newPs.getNationalId(), newPs);
 				}
