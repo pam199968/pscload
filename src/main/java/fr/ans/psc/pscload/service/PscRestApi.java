@@ -2,7 +2,6 @@ package fr.ans.psc.pscload.service;
 
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
 import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
@@ -40,10 +39,9 @@ public class PscRestApi {
     /**
      * Instantiates a new Psc rest api.
      *  @param restTemplateBuilder the rest template builder
-     * @param gson                gson
-     * @param jsonFormatter
+     * @param jsonFormatter json formatter
      */
-    public PscRestApi(RestTemplateBuilder restTemplateBuilder, Gson gson, JsonFormatter jsonFormatter) {
+    public PscRestApi(RestTemplateBuilder restTemplateBuilder, JsonFormatter jsonFormatter) {
         // set connection and read timeouts
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(500))
