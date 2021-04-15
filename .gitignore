@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+/pscload.nomad
+/no-fly.ser
+/src/test/resources/*

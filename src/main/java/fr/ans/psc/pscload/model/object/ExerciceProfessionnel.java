@@ -3,6 +3,7 @@ package fr.ans.psc.pscload.model.object;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
+import java.util.*;
 
 public class ExerciceProfessionnel implements Serializable {
 
@@ -22,10 +23,12 @@ public class ExerciceProfessionnel implements Serializable {
     private String firstName;
 
     @JsonProperty("expertises")
-    private SavoirFaire[] expertises;
+    private List<SavoirFaire> expertises = new ArrayList<>();
 
     @JsonProperty("workSituations")
-    private SituationExercice[] workSituations;
+    private List<SituationExercice> workSituations = new ArrayList<>();
+
+    public ExerciceProfessionnel() {}
 
     public ExerciceProfessionnel(String[] items) {
         this.code = items[13];
@@ -33,10 +36,51 @@ public class ExerciceProfessionnel implements Serializable {
         this.salutationCode = items[15];
         this.lastName = items[16];
         this.firstName = items[17];
-        this.expertises = new SavoirFaire[1];
-        this.expertises[0] = new SavoirFaire(items);
-        this.workSituations = new SituationExercice[1];
-        this.workSituations[0] = new SituationExercice(items);
+        this.expertises.add(new SavoirFaire(items));
+        this.workSituations.add(new SituationExercice(items));
     }
 
+    public ExerciceProfessionnel(ExerciceProfessionnel exPro) {
+        this.code = exPro.code;
+        this.categoryCode = exPro.categoryCode;
+        this.salutationCode = exPro.salutationCode;
+        this.lastName = exPro.lastName;
+        this.firstName = exPro.firstName;
+    }
+
+    public String getKey() {
+        return Objects.toString(code, "") +
+                Objects.toString(categoryCode, "");
+    }
+
+    public List<SavoirFaire> getExpertises() {
+        return expertises;
+    }
+
+    public List<SituationExercice> getWorkSituations() {
+        return workSituations;
+    }
+
+    public int nakedHash() {
+        return Objects.hash(code, categoryCode, salutationCode, lastName, firstName);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ExerciceProfessionnel)) return false;
+        ExerciceProfessionnel that = (ExerciceProfessionnel) o;
+        return Objects.equals(code, that.code) && Objects.equals(categoryCode, that.categoryCode) && Objects.equals(salutationCode, that.salutationCode) && Objects.equals(lastName, that.lastName) && Objects.equals(firstName, that.firstName) && Objects.equals(getExpertises(), that.getExpertises()) && Objects.equals(getWorkSituations(), that.getWorkSituations());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(code, categoryCode, salutationCode, lastName, firstName, getExpertises(), getWorkSituations());
+    }
+
+    @Override
+    public String toString() {
+        return code + '|' + categoryCode + '|' + salutationCode + '|' + lastName + '|' + firstName + '|' +
+                expertises + '|' + workSituations;
+    }
 }

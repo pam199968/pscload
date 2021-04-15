@@ -1,27 +1,20 @@
 package fr.ans.psc.pscload;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.univocity.parsers.common.ParsingContext;
-import com.univocity.parsers.common.processor.BeanListProcessor;
-import com.univocity.parsers.common.processor.ObjectRowProcessor;
-import com.univocity.parsers.common.record.Record;
-import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
-import fr.ans.psc.pscload.model.factory.AttributeFactory;
-import fr.ans.psc.pscload.model.object.Attribute;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
+import fr.ans.psc.pscload.component.JsonFormatter;
+import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
 import fr.ans.psc.pscload.model.object.Professionnel;
-import fr.ans.psc.pscload.model.object.response.PsListResponse;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @SpringBootTest
 class PscloadApplicationTests {
@@ -30,10 +23,13 @@ class PscloadApplicationTests {
 	@Disabled
 	void postMessageTest() {
 		String url = "http://localhost:8000/api/ps";
-		String message = "0|496112012|0496112012|CHOLOT|Florence'Renée'Georgette|20/05/1964|||||||MME|60|C||MESFIOUI RAJA|Florence|||S|||||||||||||||||||||||||||||";
-		//String message = "3|190000042/021721|3190000042/021721|PROS|JEAN LOUIS''||||||0555926000||M||||PROS|JEAN LOUIS|||S||||||||F190000042||||||||||||||0555926000||0555926080|||||";
+		//String message = "0|496112012|0496112012|CHOLOT|Florence'Renée'Georgette|20/05/1964|||||||MME|60|C||MESFIOUI RAJA|Florence|||S|||||||||||||||||||||||||||||";
+		String message = "3|190000042/021721|3190000042/021721|PROS|JEAN LOUIS''||||||0555926000||M||||PROS|JEAN LOUIS|||S||||||||F190000042||||||||||||||0555926000||0555926080|||||";
 		PscRestApi pscRestApi = new PscRestApi();
-		pscRestApi.putPs(url, message);
+		JsonFormatter jsonFormatter = new JsonFormatter();
+
+		String jsonPs = jsonFormatter.nakedPsFromMessage(message);
+		pscRestApi.put(url, jsonPs);
 	}
 
 	@Test
@@ -41,111 +37,78 @@ class PscloadApplicationTests {
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
 		PscRestApi pscRestApi = new PscRestApi();
-		PsListResponse psListResponse = pscRestApi.getPsAsResponse(url);
+		pscRestApi.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+//		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
 
 	@Test
 	@Disabled
-	void contextLoads() throws UnsupportedEncodingException {
-		CsvParserSettings settings = new CsvParserSettings();
-		settings.getFormat().setLineSeparator("\n");
-		settings.getFormat().setDelimiter('|');
-
-		// creates a CSV parser
-		CsvParser parser = new CsvParser(settings);
-
+	void loadDbFromFileTest() throws FileNotFoundException {
+		String url = "http://localhost:8000/api/ps";
 		long startTime = System.currentTimeMillis();
-		// parses all rows into records in one go.
-		List<Record> allRowsRecords = parser.parseAllRecords(
-				new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader()
-						.getResourceAsStream("Extraction_PS_PSC.txt")), "UTF-8"));
-		long stopTime = System.currentTimeMillis();
-		System.out.println(stopTime-startTime);
 
+		File file = new File("src/test/resources/download/Extraction_PSC_20001.txt");
+
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(file);
+		System.out.println(System.currentTimeMillis()-startTime);
+
+		PscRestApi pscRestApi = new PscRestApi();
+		JsonFormatter jsonFormatter = new JsonFormatter();
+
+		for (Professionnel ps : original.values()) {
+			pscRestApi.post(url, jsonFormatter.jsonFromObject(ps));
+		}
+
+		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
 	@Test
 	@Disabled
-	void rowProcessorTest() throws UnsupportedEncodingException {
-		// BeanListProcessor converts each parsed row to an instance of a given class, then stores each instance into a list.
-		BeanListProcessor<Professionnel> rowProcessor = new BeanListProcessor<>(Professionnel.class);
-
-		com.univocity.parsers.csv.CsvParserSettings parserSettings = new com.univocity.parsers.csv.CsvParserSettings();
-		parserSettings.getFormat().setLineSeparator("\n");
-		parserSettings.getFormat().setDelimiter('|');
-		parserSettings.setProcessor(rowProcessor);
-		parserSettings.setHeaderExtractionEnabled(true);
-
+	void deserializeAndDiff() throws FileNotFoundException {
+		String url = "http://localhost:8000/api/ps";
 		long startTime = System.currentTimeMillis();
-		CsvParser parser = new CsvParser(parserSettings);
-		parser.parse(new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader()
-				.getResourceAsStream("Extraction_PS_PSC.txt")), "UTF-8"));
+
+		File ogFile = new File("src/test/resources/download/Extraction_PSC_20001.txt");
+		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
+
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(ogFile);
 		System.out.println(System.currentTimeMillis()-startTime);
-		// The BeanListProcessor provides a list of objects extracted from the input.
-		List<Professionnel> beans = rowProcessor.getBeans();
 
-		System.out.println("walalala");
+		Map<String, Professionnel> revised = ProfessionnelMapper.getPsMapFromFile(newFile);
+		System.out.println(System.currentTimeMillis()-startTime);
 
-		Attribute circle = (Attribute) AttributeFactory.getAttribute("az");
+		MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
 
+		PscRestApi pscRestApi = new PscRestApi();
+		JsonFormatter jsonFormatter = new JsonFormatter();
+
+		diff.entriesOnlyOnLeft().forEach((k, v) ->
+				pscRestApi.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+		diff.entriesOnlyOnRight().forEach((k, v) ->
+				pscRestApi.post(url, jsonFormatter.jsonFromObject(v)));
+		diff.entriesDiffering().forEach((k, v) ->
+				pscRestApi.diffUpdatePs(v.leftValue(), v.rightValue()));
+
+		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
 	@Test
 	@Disabled
-	void myProcessorTest() throws IOException {
-
-		List<Professionnel> psList = new ArrayList<>();
-		// ObjectRowProcessor converts the parsed values and gives you the resulting row.
-		ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
-			@Override
-			public void rowProcessed(Object[] objects, ParsingContext parsingContext) {
-				Professionnel ps = new Professionnel((String[]) objects);
-				psList.add(ps);
-			}
-
-		};
-
-		CsvParserSettings parserSettings = new CsvParserSettings();
-		parserSettings.getFormat().setLineSeparator("\n");
-		parserSettings.getFormat().setDelimiter('|');
-		parserSettings.setProcessor(rowProcessor);
-		parserSettings.setHeaderExtractionEnabled(true);
-
-		long startTime = System.currentTimeMillis();
-		CsvParser parser = new CsvParser(parserSettings);
-		parser.parse(new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader()
-				.getResourceAsStream("Extraction_PS_PSC.txt")), "UTF-8"));
-		System.out.println(System.currentTimeMillis()-startTime);
-
-
-		Kryo kryo = new Kryo();
-		kryo.register(ArrayList.class);
-		kryo.register(Professionnel.class);
-		kryo.register(Attribute.class);
-
-		Output output = new Output(new FileOutputStream("no-fly.ser"));
-		kryo.writeObjectOrNull(output, psList, ArrayList.class);
-		output.close();
-
-		System.out.println(System.currentTimeMillis()-startTime);
-
-	}
-
-	@Test
-	@Disabled
-	public void deserializeTest() throws IOException {
+	void firstParseAndSerializeAndDeserialize() throws FileNotFoundException {
 		long startTime = System.currentTimeMillis();
 
-		Kryo kryo = new Kryo();
-		kryo.register(ArrayList.class, 9);
-		kryo.register(Professionnel.class, 10);
-		kryo.register(Attribute.class, 11);
+		File extFile = new File("src/test/resources/Extraction_PSC.txt");
 
-		Input input = new Input(new FileInputStream("no-fly.ser"));
-		List<Professionnel> object2 = kryo.readObjectOrNull(input, ArrayList.class);
-		input.close();
+		//build simple lists of the lines of the two testfiles
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(extFile);
+		System.out.println(System.currentTimeMillis()-startTime);
+		ProfessionnelMapper.serialisePsMapToFile(original, "src/test/resources/Extraction_PSC.ser");
+		File serFile = new File("src/test/resources/Extraction_PSC.ser");
+		System.out.println(System.currentTimeMillis()-startTime);
 
+		original.clear();
+		Map<String, Professionnel> des = ProfessionnelMapper.deserialiseFileToPsMap(serFile);
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
