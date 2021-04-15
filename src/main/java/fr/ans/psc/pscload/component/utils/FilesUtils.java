@@ -27,10 +27,10 @@ public class FilesUtils {
      * Unzip.
      *
      * @param zipFilePath the zip file path
-     * @return true if a few file is found and unzipped successfully
+     * @return true if a new file is found and unzipped successfully
      * @throws IOException io exception
      */
-    protected static boolean unzip(String zipFilePath) throws IOException {
+    public static boolean unzip(String zipFilePath) throws IOException {
         return unzip(zipFilePath, false);
     }
 
@@ -38,11 +38,11 @@ public class FilesUtils {
      * Unzip.
      *
      * @param zipFilePath the zip file path
-     * @param delete      set to true to delete the zip file after unzipping
-     * @return true if a few file is found and unzipped successfully
+     * @param clean      set to true to delete the zip file after unzipping
+     * @return true if a new file is found and unzipped successfully
      * @throws IOException io exception
      */
-    protected static boolean unzip(String zipFilePath, boolean delete) throws IOException {
+    protected static boolean unzip(String zipFilePath, boolean clean) throws IOException {
         File zip = new File(zipFilePath);
         File destDir = zip.getParentFile();
         File[] existingFiles = destDir.listFiles();
@@ -80,7 +80,7 @@ public class FilesUtils {
         }
         zis.closeEntry();
         zis.close();
-        if (delete) {
+        if (clean) {
             zip.delete();
         }
         return goAhead;
@@ -106,26 +106,66 @@ public class FilesUtils {
      * @throws IOException io exception
      */
     public static void cleanup(String filesDirectory) throws IOException {
-        Map<String, List<File>> filesMap = zipsAndTexts(new File(filesDirectory).listFiles());
+        Map<String, List<File>> filesMap = zipsTextsNSers(new File(filesDirectory).listFiles());
 
         List<File> listOfZips = filesMap.get("zips");
         List<File> listOfExtracts = filesMap.get("texts");
+        List<File> listOfSers = filesMap.get("sers");
 
         // Order files lists from oldest to newest by comparing parsed dates,
         // but honestly same result if we had used file name String to compare
         listOfZips.sort(FilesUtils::compare);
         listOfExtracts.sort(FilesUtils::compare);
+        listOfSers.sort(FilesUtils::compare);
 
         listOfZips.remove(listOfZips.size() -1);
         listOfExtracts.remove(listOfExtracts.size() -1);
+        listOfSers.remove(listOfSers.size() -1);
 
         for (File file : listOfZips) {
             file.delete();
         }
-
         for (File file : listOfExtracts) {
             file.delete();
         }
+        for (File file : listOfSers) {
+            file.delete();
+        }
+    }
+
+    /**
+     * Gets latest extract and ser.
+     *
+     * @param filesDirectory the files directory
+     * @return the latest ext and ser files as map, null value if file doesnt exist
+     * @throws IOException the io exception
+     */
+    public static Map<String, File> getLatestExtAndSer(String filesDirectory) throws IOException {
+        Map<String, List<File>> filesMap = zipsTextsNSers(new File(filesDirectory).listFiles());
+
+        List<File> listOfExtracts = filesMap.get("texts");
+        List<File> listOfSers = filesMap.get("sers");
+
+        // Order files lists from oldest to newest by comparing parsed dates,
+        // but honestly same result if we had used file name String to compare
+        listOfExtracts.sort(FilesUtils::compare);
+        listOfSers.sort(FilesUtils::compare);
+
+        Map<String, File> latestFiles = new HashMap<>();
+
+        if (listOfExtracts.isEmpty()) {
+            latestFiles.put("ext", null);
+        } else {
+            latestFiles.put("ext", listOfExtracts.get(listOfExtracts.size() -1));
+        }
+
+        if (listOfSers.isEmpty()) {
+            latestFiles.put("ser", null);
+        } else {
+            latestFiles.put("ser", listOfSers.get(listOfSers.size() -1));
+        }
+
+        return latestFiles;
     }
 
     /**
@@ -135,17 +175,19 @@ public class FilesUtils {
      * @return the map
      * @throws IOException io exception
      */
-    protected static Map<String, List<File>> zipsAndTexts(File[] listOfFiles) throws IOException {
+    private static Map<String, List<File>> zipsTextsNSers(File[] listOfFiles) throws IOException {
         Map<String, List<File>> filesMap = new HashMap<>();
         filesMap.put("zips", new ArrayList<>());
         filesMap.put("texts", new ArrayList<>());
+        filesMap.put("sers", new ArrayList<>());
 
         for (File file : listOfFiles != null ? listOfFiles : new File[0]) {
             String type = Files.probeContentType(file.toPath());
-            if (type == null) continue;
-            if (Files.probeContentType(file.toPath()).contains("zip")) {
+            if (file.getName().endsWith(".ser")) {
+                filesMap.get("sers").add(file);
+            } else if (type != null && type.contains("zip")) {
                 filesMap.get("zips").add(file);
-            } else if (Files.probeContentType(file.toPath()).contains("text")) {
+            } else if (type != null && type.contains("text")) {
                 filesMap.get("texts").add(file);
             }
         }
@@ -166,12 +208,8 @@ public class FilesUtils {
             return true;
         }
         for (File f2 : listF2) {
-            try {
-                if (getDateFromFileName(f1).compareTo(getDateFromFileName(f2)) > 0) {
-                    return true;
-                }
-            } catch (ParseException e) {
-                e.printStackTrace();
+            if (compare(f1, f2) > 0) {
+                return true;
             }
         }
         return false;

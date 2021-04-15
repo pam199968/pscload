@@ -9,16 +9,17 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import fr.ans.psc.pscload.model.object.*;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ProfessionnelMapper {
 
-    public Map<String, Professionnel> getPsHashMap(String fileName) {
+    ProfessionnelMapper() {}
+
+    public static Map<String, Professionnel> getPsMapFromFile(File file) throws FileNotFoundException {
         Map<String, Professionnel> psMap = new HashMap<>();
         // ObjectRowProcessor converts the parsed values and gives you the resulting row.
         ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
@@ -59,13 +60,12 @@ public class ProfessionnelMapper {
         parserSettings.setHeaderExtractionEnabled(true);
 
         CsvParser parser = new CsvParser(parserSettings);
-        parser.parse(new InputStreamReader(Objects.requireNonNull(this.getClass().getClassLoader()
-                .getResourceAsStream(fileName)), StandardCharsets.UTF_8));
+        parser.parse(new FileReader(file));
 
         return psMap;
     }
 
-    public void serialisePsHashMapToFile(Object psList, String fileName) throws FileNotFoundException {
+    public static void serialisePsMapToFile(Object psList, String fileName) throws FileNotFoundException {
         Kryo kryo = new Kryo();
         kryo.register(HashMap.class, 9);
         kryo.register(ArrayList.class, 10);
@@ -80,7 +80,7 @@ public class ProfessionnelMapper {
         output.close();
     }
 
-    public Map<String, Professionnel> deserialiseFileToPsHashMap(String fileName) throws FileNotFoundException {
+    public static Map<String, Professionnel> deserialiseFileToPsMap(File file) throws FileNotFoundException {
         Kryo kryo = new Kryo();
         kryo.register(HashMap.class, 9);
         kryo.register(ArrayList.class, 10);
@@ -90,7 +90,7 @@ public class ProfessionnelMapper {
         kryo.register(SituationExercice.class, 14);
         kryo.register(Structure.class, 15);
 
-        Input input = new Input(new FileInputStream(fileName));
+        Input input = new Input(new FileInputStream(file));
         Map<String, Professionnel> psList = kryo.readObjectOrNull(input, HashMap.class);
         input.close();
 

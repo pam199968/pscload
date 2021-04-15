@@ -3,6 +3,8 @@ package fr.ans.psc.pscload.service;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
+import fr.ans.psc.pscload.component.utils.FilesUtils;
+import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
 import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.model.object.SavoirFaire;
@@ -16,6 +18,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -38,8 +42,9 @@ public class PscRestApi {
 
     /**
      * Instantiates a new Psc rest api.
-     *  @param restTemplateBuilder the rest template builder
-     * @param jsonFormatter json formatter
+     *
+     * @param restTemplateBuilder the rest template builder
+     * @param jsonFormatter       json formatter
      */
     public PscRestApi(RestTemplateBuilder restTemplateBuilder, JsonFormatter jsonFormatter) {
         // set connection and read timeouts
@@ -83,8 +88,8 @@ public class PscRestApi {
     /**
      * Put.
      *
-     * @param url         the url
-     * @param json        json request
+     * @param url  the url
+     * @param json json request
      */
     public void put(String url, String json) {
         // create headers
@@ -111,8 +116,8 @@ public class PscRestApi {
     /**
      * Post.
      *
-     * @param url         the url
-     * @param json        json request
+     * @param url  the url
+     * @param json json request
      */
     public void post(String url, String json) {
         // create headers
@@ -139,7 +144,7 @@ public class PscRestApi {
     /**
      * Delete.
      *
-     * @param url  the url
+     * @param url the url
      */
     public void delete(String url) {
         // send DELETE request
@@ -148,6 +153,37 @@ public class PscRestApi {
         System.out.println("deleted " + url);
     }
 
+    /**
+     * Upload ps map.
+     *
+     * @param psMap the ps map
+     */
+    public void uploadPsMap(Map<String, Professionnel> psMap) {
+        for (Professionnel ps : psMap.values()) {
+            put(apiBaseUrl, jsonFormatter.jsonFromObject(ps));
+        }
+    }
+
+    /**
+     * Diff PS maps.
+     *
+     * @param original OG PS map
+     * @param revised  the revised PS map
+     */
+    public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
+        MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
+        diff.entriesOnlyOnLeft().forEach((k, v) ->
+                delete(apiBaseUrl + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+        diff.entriesOnlyOnRight().forEach((k, v) -> post(apiBaseUrl, jsonFormatter.jsonFromObject(v)));
+        diff.entriesDiffering().forEach((k, v) -> diffUpdatePs(v.leftValue(), v.rightValue()));
+    }
+
+    /**
+     * Diff update ps.
+     *
+     * @param left  the left
+     * @param right the right
+     */
     public void diffUpdatePs(Professionnel left, Professionnel right) {
 
         String psUrl = apiBaseUrl + '/' + URLEncoder.encode(left.getNationalId(), StandardCharsets.UTF_8);

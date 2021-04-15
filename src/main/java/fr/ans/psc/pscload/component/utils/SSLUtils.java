@@ -24,12 +24,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The type Ssl utils.
+ */
 public class SSLUtils {
 
     private static final char[] PSC_LOAD_PASS = "pscloadpass".toCharArray();
 
+    /**
+     * Instantiates a new Ssl utils.
+     */
     SSLUtils() {}
 
+    /**
+     * Init ssl context.
+     *
+     * @param certFile   the cert file
+     * @param keyFile    the key file
+     * @param caCertFile the ca cert file
+     * @throws NoSuchAlgorithmException  the no such algorithm exception
+     * @throws UnrecoverableKeyException the unrecoverable key exception
+     * @throws KeyStoreException         the key store exception
+     * @throws KeyManagementException    the key management exception
+     * @throws IOException               the io exception
+     * @throws InvalidKeySpecException   the invalid key spec exception
+     * @throws CertificateException      the certificate exception
+     */
     public static void initSSLContext(String certFile, String keyFile, String caCertFile) throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException,
             KeyManagementException, IOException, InvalidKeySpecException, CertificateException {
         KeyStore keyStore = keyStoreFromPEM(certFile, keyFile);
@@ -110,10 +130,13 @@ public class SSLUtils {
 
     /**
      * Downloads a file from a URL
-     * @param fileURL HTTP URL of the file to be downloaded
+     *
+     * @param fileURL       HTTP URL of the file to be downloaded
+     * @param saveDirectory the save directory
+     * @return the zipFile path, or null if error or already exists
      * @throws IOException IO Exception
      */
-    public static boolean downloadFile(String fileURL, String saveDirectory) throws IOException {
+    public static String downloadFile(String fileURL, String saveDirectory) throws IOException {
         URL url = new URL(fileURL);
         HttpsURLConnection httpConn = (HttpsURLConnection) url.openConnection();
         int responseCode = httpConn.getResponseCode();
@@ -147,7 +170,7 @@ public class SSLUtils {
             if (existingFiles != null && Arrays.stream(existingFiles).anyMatch(f -> finalFileName.equals(f.getName()))) {
                 System.out.println("File already downloaded");
                 httpConn.disconnect();
-                return false;
+                return null;
             }
 
             // opens input stream from the HTTP connection
@@ -166,14 +189,12 @@ public class SSLUtils {
 
             outputStream.close();
             inputStream.close();
+            httpConn.disconnect();
 
-            if (FilesUtils.unzip(zipFile)) {
-                httpConn.disconnect();
-                return true;
-            }
+            return zipFile;
         }
         System.out.println("No files to download. Server replied with HTTP code: " + responseCode);
         httpConn.disconnect();
-        return false;
+        return null;
     }
 }

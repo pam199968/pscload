@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -43,12 +44,13 @@ class PscloadApplicationTests {
 
 	@Test
 	@Disabled
-	void loadDbFromFileTest() {
+	void loadDbFromFileTest() throws FileNotFoundException {
 		String url = "http://localhost:8000/api/ps";
 		long startTime = System.currentTimeMillis();
-		ProfessionnelMapper psMapper = new ProfessionnelMapper();
 
-		Map<String, Professionnel> original = psMapper.getPsHashMap("Extraction_PSC_20001.txt");
+		File file = new File("src/test/resources/download/Extraction_PSC_20001.txt");
+
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(file);
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		PscRestApi pscRestApi = new PscRestApi();
@@ -63,15 +65,17 @@ class PscloadApplicationTests {
 
 	@Test
 	@Disabled
-	void deserializeAndDiff() {
+	void deserializeAndDiff() throws FileNotFoundException {
 		String url = "http://localhost:8000/api/ps";
 		long startTime = System.currentTimeMillis();
-		ProfessionnelMapper psMapper = new ProfessionnelMapper();
 
-		Map<String, Professionnel> original = psMapper.getPsHashMap("Extraction_PSC_20001.txt");
+		File ogFile = new File("src/test/resources/download/Extraction_PSC_20001.txt");
+		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
+
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(ogFile);
 		System.out.println(System.currentTimeMillis()-startTime);
 
-		Map<String, Professionnel> revised = psMapper.getPsHashMap("Extraction_PSC_20002.txt");
+		Map<String, Professionnel> revised = ProfessionnelMapper.getPsMapFromFile(newFile);
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
@@ -93,16 +97,18 @@ class PscloadApplicationTests {
 	@Disabled
 	void firstParseAndSerializeAndDeserialize() throws FileNotFoundException {
 		long startTime = System.currentTimeMillis();
-		ProfessionnelMapper psMapper = new ProfessionnelMapper();
+
+		File extFile = new File("src/test/resources/Extraction_PSC.txt");
 
 		//build simple lists of the lines of the two testfiles
-		Map<String, Professionnel> original = psMapper.getPsHashMap("Extraction_PSC.txt");
+		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(extFile);
 		System.out.println(System.currentTimeMillis()-startTime);
-		psMapper.serialisePsHashMapToFile(original, "Extraction_PSC.ser");
+		ProfessionnelMapper.serialisePsMapToFile(original, "src/test/resources/Extraction_PSC.ser");
+		File serFile = new File("src/test/resources/Extraction_PSC.ser");
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		original.clear();
-		Map<String, Professionnel> des = psMapper.deserialiseFileToPsHashMap("Extraction_PSC.ser");
+		Map<String, Professionnel> des = ProfessionnelMapper.deserialiseFileToPsMap(serFile);
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 
