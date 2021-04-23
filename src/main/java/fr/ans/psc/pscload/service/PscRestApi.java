@@ -3,8 +3,6 @@ package fr.ans.psc.pscload.service;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
-import fr.ans.psc.pscload.component.utils.FilesUtils;
-import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
 import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.model.object.SavoirFaire;
@@ -18,8 +16,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -60,8 +56,10 @@ public class PscRestApi {
      */
     public PscRestApi() {
         RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
-        this.restTemplate = restTemplateBuilder.build();
-
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofSeconds(500))
+                .setReadTimeout(Duration.ofSeconds(500))
+                .build();
         this.jsonFormatter = new JsonFormatter();
     }
 
@@ -98,6 +96,8 @@ public class PscRestApi {
         headers.setContentType(MediaType.APPLICATION_JSON);
         // set `accept` header
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        // set `content-length`header
+        headers.setContentLength(json.getBytes(StandardCharsets.UTF_8).length);
 
         // build the request
         HttpEntity<String> request = new HttpEntity<>(json, headers);
@@ -126,6 +126,8 @@ public class PscRestApi {
         headers.setContentType(MediaType.APPLICATION_JSON);
         // set `accept` header
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        // set `content-length`header
+        headers.setContentLength(json.getBytes(StandardCharsets.UTF_8).length);
 
         // build the request
         HttpEntity<String> request = new HttpEntity<>(json, headers);

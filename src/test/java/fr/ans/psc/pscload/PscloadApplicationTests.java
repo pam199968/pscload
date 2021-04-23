@@ -3,6 +3,7 @@ package fr.ans.psc.pscload;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
+import fr.ans.psc.pscload.component.utils.SSLUtils;
 import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
 import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.service.PscRestApi;
@@ -12,12 +13,28 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 
 @SpringBootTest
 class PscloadApplicationTests {
+
+	@Test
+	@Disabled
+	void downloadTest() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+			KeyManagementException, InvalidKeySpecException, IOException, CertificateException {
+
+		SSLUtils.initSSLContext("src/test/resources/certificate.pem", "src/test/resources/key.pem", "src/test/resources/caCert.pem");
+		SSLUtils.downloadFile("https://service.annuaire.sante.fr/annuaire-sante-webservices/V300/services/extraction/Extraction_ProSanteConnect", "src/test/resources/download");
+	}
 
 	@Test
 	@Disabled
