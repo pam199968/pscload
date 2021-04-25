@@ -3,27 +3,20 @@ package fr.ans.psc.pscload.service;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
-import fr.ans.psc.pscload.component.utils.FilesUtils;
-import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
 import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.model.object.SavoirFaire;
 import fr.ans.psc.pscload.model.object.SituationExercice;
 import fr.ans.psc.pscload.model.object.response.PsListResponse;
 import fr.ans.psc.pscload.model.object.response.PsResponse;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -32,7 +25,9 @@ import java.util.Map;
 @Service
 public class PscRestApi {
 
-    private final RestTemplate restTemplate;
+    private final Request.Builder requestBuilder;
+
+    private final OkHttpClient client;
 
     @Autowired
     private final JsonFormatter jsonFormatter;
@@ -43,15 +38,14 @@ public class PscRestApi {
     /**
      * Instantiates a new Psc rest api.
      *
-     * @param restTemplateBuilder the rest template builder
-     * @param jsonFormatter       json formatter
+     * @param client         the client
+     * @param requestBuilder the request builder
+     * @param jsonFormatter  json formatter
      */
-    public PscRestApi(RestTemplateBuilder restTemplateBuilder, JsonFormatter jsonFormatter) {
+    public PscRestApi(OkHttpClient client, Request.Builder requestBuilder, JsonFormatter jsonFormatter) {
         // set connection and read timeouts
-        this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(500))
-                .setReadTimeout(Duration.ofSeconds(500))
-                .build();
+        this.client = client;
+        this.requestBuilder = requestBuilder;
         this.jsonFormatter = jsonFormatter;
     }
 
@@ -59,9 +53,8 @@ public class PscRestApi {
      * Instantiates a new Psc rest api.
      */
     public PscRestApi() {
-        RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
-        this.restTemplate = restTemplateBuilder.build();
-
+        this.client = new OkHttpClient();
+        this.requestBuilder = new Request.Builder();
         this.jsonFormatter = new JsonFormatter();
     }
 
@@ -72,7 +65,20 @@ public class PscRestApi {
      * @return the ps list
      */
     public PsListResponse getPsList(String url) {
-        return this.restTemplate.getForObject(url, PsListResponse.class);
+
+        Request request = requestBuilder
+                .url(url)
+                .build();
+
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            System.out.println(response.body().string());
+            return jsonFormatter.psListFromJson(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -82,7 +88,19 @@ public class PscRestApi {
      * @return the ps
      */
     public PsResponse getPs(String url) {
-        return this.restTemplate.getForObject(url, PsResponse.class);
+        Request request = requestBuilder
+                .url(url)
+                .build();
+
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            System.out.println(response.body().string());
+            return jsonFormatter.psFromJson(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -92,25 +110,20 @@ public class PscRestApi {
      * @param json json request
      */
     public void put(String url, String json) {
-        // create headers
-        HttpHeaders headers = new HttpHeaders();
-        // set `content-type` header
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        // set `accept` header
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
-        // build the request
-        HttpEntity<String> request = new HttpEntity<>(json, headers);
+        Request request = requestBuilder
+                .url(url)
+                .put(body)
+                .build();
 
-        // send PUT request
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
-        // check the response, e.g. Location header,  Status, and body
-        response.getHeaders().getLocation();
-        response.getStatusCode();
-        String responseBody = response.getBody();
-
-        // return response message
-        System.out.println(responseBody);
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -120,25 +133,20 @@ public class PscRestApi {
      * @param json json request
      */
     public void post(String url, String json) {
-        // create headers
-        HttpHeaders headers = new HttpHeaders();
-        // set `content-type` header
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        // set `accept` header
-        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
 
-        // build the request
-        HttpEntity<String> request = new HttpEntity<>(json, headers);
+        Request request = requestBuilder
+                .url(url)
+                .post(body)
+                .build();
 
-        // send POST request
-        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
-        // check the response, e.g. Location header,  Status, and body
-        response.getHeaders().getLocation();
-        response.getStatusCode();
-        String responseBody = response.getBody();
-
-        // return response message
-        System.out.println(responseBody);
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -147,10 +155,18 @@ public class PscRestApi {
      * @param url the url
      */
     public void delete(String url) {
-        // send DELETE request
-        restTemplate.delete(url);
+        Request request = requestBuilder
+                .url(url)
+                .delete()
+                .build();
 
-        System.out.println("deleted " + url);
+        Call call = client.newCall(request);
+        try {
+            Response response = call.execute();
+            System.out.println(response.body().string());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
