@@ -5,6 +5,8 @@ import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
 import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.model.object.SavoirFaire;
 import fr.ans.psc.pscload.model.object.SituationExercice;
+import fr.ans.psc.pscload.model.object.response.PsListResponse;
+import fr.ans.psc.pscload.model.object.response.PsResponse;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
@@ -35,6 +37,9 @@ public class JsonFormatter {
                 .registerTypeHierarchyAdapter(List.class, new CollectionAdapter()).create();
     }
 
+    /**
+     * The type Collection adapter.
+     */
     static class CollectionAdapter implements JsonSerializer<List<?>> {
         @Override
         public JsonElement serialize(List<?> src, Type typeOfSrc, JsonSerializationContext context) {
@@ -76,6 +81,14 @@ public class JsonFormatter {
      */
     public String jsonFromObject(Object o) {
         return gson.toJson(o);
+    }
+
+    public PsListResponse psListFromJson(String json) {
+        return gson.fromJson(json, PsListResponse.class);
+    }
+
+    public PsResponse psFromJson(String json) {
+        return gson.fromJson(json, PsResponse.class);
     }
 
     /**
