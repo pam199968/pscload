@@ -7,6 +7,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManagerFactory;
@@ -31,6 +33,11 @@ public class SSLUtils {
     private static final char[] PSC_LOAD_PASS = "pscloadpass".toCharArray();
 
     /**
+     * The logger.
+     */
+    private static final Logger log = LoggerFactory.getLogger(SSLUtils.class);
+
+    /**
      * Instantiates a new Ssl utils.
      */
     SSLUtils() {}
@@ -49,8 +56,8 @@ public class SSLUtils {
      * @throws InvalidKeySpecException   the invalid key spec exception
      * @throws CertificateException      the certificate exception
      */
-    public static void initSSLContext(String certFile, String keyFile, String caCertFile) throws NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException,
-            KeyManagementException, IOException, InvalidKeySpecException, CertificateException {
+    public static void initSSLContext(String certFile, String keyFile, String caCertFile)
+            throws GeneralSecurityException, IOException {
         KeyStore keyStore = keyStoreFromPEM(certFile, keyFile);
         KeyManagerFactory keyManagerFactory =
                 KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -60,6 +67,15 @@ public class SSLUtils {
         TrustManagerFactory trustManagerFactory =
                 TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(trustStore);
+
+/*
+        List<X509Certificate> caCerts =
+                Arrays.stream(trustManagerFactory.getTrustManagers()).filter(X509TrustManager.class::isInstance)
+                        .map(X509TrustManager.class::cast).map(tm -> Arrays.asList(tm.getAcceptedIssuers()))
+                        .flatMap(Collection::stream).collect(Collectors.toList());
+
+        log.debug(caCerts.get(0).getIssuerX500Principal().getName());
+*/
 
         final SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
         sslContext.init(keyManagerFactory.getKeyManagers(),
@@ -105,7 +121,7 @@ public class SSLUtils {
         return keyStore;
     }
 
-    private static KeyStore trustStoreFromPEM(String caCertFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
+    private static KeyStore trustStoreFromPEM(String caCertFile) throws IOException, GeneralSecurityException {
 
         PemReader caReader = new PemReader(new FileReader(caCertFile));
         PEMParser caParser = new PEMParser(caReader);
@@ -158,16 +174,16 @@ public class SSLUtils {
                 fileName = fileURL.substring(fileURL.lastIndexOf("/") + 1);
             }
 
-            System.out.println("Content-Type = " + contentType);
-            System.out.println("Content-Disposition = " + disposition);
-            System.out.println("Content-Length = " + contentLength);
-            System.out.println("fileName = " + fileName);
+            log.info("Content-Type = {}", contentType);
+            log.info("Content-Disposition = {}", disposition);
+            log.info("Content-Length = {}", contentLength);
+            log.info("fileName = {}", fileName);
 
             // Check if zip already exists before download
             File[] existingFiles = new File(saveDirectory).listFiles();
             String finalFileName = fileName;
             if (existingFiles != null && Arrays.stream(existingFiles).anyMatch(f -> finalFileName.equals(f.getName()))) {
-                System.out.println("File already downloaded");
+                log.info("File already downloaded");
                 httpConn.disconnect();
                 return null;
             }
@@ -184,7 +200,7 @@ public class SSLUtils {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
-            System.out.println("File downloaded");
+            log.info("File downloaded");
 
             outputStream.close();
             inputStream.close();
@@ -192,7 +208,7 @@ public class SSLUtils {
 
             return zipFile;
         }
-        System.out.println("No files to download. Server replied with HTTP code: " + responseCode);
+        log.info("No files to download. Server replied with HTTP code: {}", responseCode);
         httpConn.disconnect();
         return null;
     }

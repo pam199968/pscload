@@ -3,6 +3,7 @@ package fr.ans.psc.pscload.component;
 import fr.ans.psc.pscload.component.utils.FilesUtils;
 import fr.ans.psc.pscload.component.utils.SSLUtils;
 import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
+import fr.ans.psc.pscload.model.object.Professionnel;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,12 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 
 /**
@@ -40,6 +36,9 @@ public class Scheduler {
     @Value("${files.directory}")
     private String filesDirectory;
 
+    @Value("${extract.download.url}")
+    private String extractDownloadUrl;
+
     public Scheduler(PscRestApi pscRestApi) {
         this.pscRestApi = pscRestApi;
     }
@@ -47,12 +46,11 @@ public class Scheduler {
     /**
      * Download and parse.
      */
-    @Scheduled(fixedRate = 3600000)
-    public void downloadAndParse() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
-            KeyManagementException, InvalidKeySpecException, IOException, CertificateException {
+    @Scheduled(fixedRateString = "${schedule.rate.ms}")
+    public void downloadAndParse() throws GeneralSecurityException, IOException {
 
         SSLUtils.initSSLContext(cert, key, ca);
-        String zipFile = SSLUtils.downloadFile("https://service.annuaire.sante.fr/annuaire-sante-webservices/V300/services/extraction/Extraction_ProSanteConnect", filesDirectory);
+        String zipFile = SSLUtils.downloadFile(extractDownloadUrl, filesDirectory);
 
         if (zipFile != null && FilesUtils.unzip(zipFile)) {
             diffOrLoad();
@@ -66,12 +64,17 @@ public class Scheduler {
         File ogFile = latestFiles.get("ser");
         File newFile = latestFiles.get("ext");
 
-        if (ogFile == null && newFile != null) {
-            pscRestApi.uploadPsMap(ProfessionnelMapper.getPsMapFromFile(newFile));
-        } else if (ogFile != null && newFile != null) {
-            pscRestApi.diffPsMaps(ProfessionnelMapper.getPsMapFromFile(ogFile),
-                    ProfessionnelMapper.getPsMapFromFile(newFile));
+        Map<String, Professionnel> newPsMap = ProfessionnelMapper.getPsMapFromFile(newFile);
+
+        if (ogFile == null) {
+            pscRestApi.uploadPsMap(newPsMap);
+        } else {
+            // perform diff
+            pscRestApi.diffPsMaps(ProfessionnelMapper.deserialiseFileToPsMap(ogFile), newPsMap);
         }
+
+        // serialise latest extract
+        ProfessionnelMapper.serialisePsMapToFile(newPsMap, filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
     }
 
 }
