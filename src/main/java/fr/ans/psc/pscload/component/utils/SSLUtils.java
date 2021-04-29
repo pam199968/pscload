@@ -183,7 +183,7 @@ public class SSLUtils {
             File[] existingFiles = new File(saveDirectory).listFiles();
             String finalFileName = fileName;
             if (existingFiles != null && Arrays.stream(existingFiles).anyMatch(f -> finalFileName.equals(f.getName()))) {
-                log.info("File already downloaded");
+                log.info("{} already downloaded", fileName);
                 httpConn.disconnect();
                 return null;
             }
@@ -200,7 +200,7 @@ public class SSLUtils {
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
-            log.info("File downloaded");
+            log.info("{} downloaded", fileName);
 
             outputStream.close();
             inputStream.close();

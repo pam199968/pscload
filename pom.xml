@@ -131,12 +131,6 @@
 						<creationTime>USE_CURRENT_TIMESTAMP</creationTime>
 						<!--<creationTime>2020-09-01T10:15:30+09:00</creationTime>-->
 					</container>
-					<allowInsecureRegistries>true</allowInsecureRegistries>
-					<extraDirectories>
-						<paths>
-							<path>/var/pscload</path>
-						</paths>
-					</extraDirectories>
 				</configuration>
 			</plugin>
 		</plugins>

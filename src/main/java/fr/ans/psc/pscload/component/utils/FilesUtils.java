@@ -1,5 +1,8 @@
 package fr.ans.psc.pscload.component.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -17,6 +20,11 @@ import java.util.zip.ZipInputStream;
  * The type Files utils.
  */
 public class FilesUtils {
+
+    /**
+     * The logger.
+     */
+    private static final Logger log = LoggerFactory.getLogger(FilesUtils.class);
 
     /**
      * Instantiates a new Files utils.
@@ -69,6 +77,7 @@ public class FilesUtils {
                     throw new IOException("Failed to create directory " + parent);
                 }
                 // write file content
+                log.info("unzipping into {}", newFile.getName());
                 FileOutputStream fos = new FileOutputStream(newFile);
                 int len;
                 while ((len = zis.read(buffer)) > 0) {
@@ -81,6 +90,7 @@ public class FilesUtils {
         zis.closeEntry();
         zis.close();
         if (clean) {
+            log.info("clean set to true, deleting {}", zip.getName());
             zip.delete();
         }
         return goAhead;
