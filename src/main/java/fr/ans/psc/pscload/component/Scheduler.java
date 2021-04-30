@@ -52,7 +52,7 @@ public class Scheduler {
         SSLUtils.initSSLContext(cert, key, ca);
         String zipFile = SSLUtils.downloadFile(extractDownloadUrl, filesDirectory);
 
-        if (FilesUtils.unzip(zipFile)) {
+        if (zipFile != null && FilesUtils.unzip(zipFile)) {
             diffOrLoad();
             FilesUtils.cleanup(filesDirectory);
         }

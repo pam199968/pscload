@@ -178,6 +178,7 @@ public class SSLUtils {
             log.info("Content-Disposition = {}", disposition);
             log.info("Content-Length = {}", contentLength);
             log.info("fileName = {}", fileName);
+            String zipFile = saveDirectory + File.separator + fileName;
 
             // Check if zip already exists before download
             File[] existingFiles = new File(saveDirectory).listFiles();
@@ -185,12 +186,11 @@ public class SSLUtils {
             if (existingFiles != null && Arrays.stream(existingFiles).anyMatch(f -> finalFileName.equals(f.getName()))) {
                 log.info("{} already downloaded", fileName);
                 httpConn.disconnect();
-                return null;
+                return zipFile;
             }
 
             // opens input stream from the HTTP connection
             InputStream inputStream = httpConn.getInputStream();
-            String zipFile = saveDirectory + File.separator + fileName;
 
             // opens an output stream to save into file
             FileOutputStream outputStream = new FileOutputStream(zipFile);
