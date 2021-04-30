@@ -84,6 +84,7 @@ public class FilesUtils {
                     fos.write(buffer, 0, len);
                 }
                 fos.close();
+                log.info("unzip complete!");
             }
             zipEntry = zis.getNextEntry();
         }
