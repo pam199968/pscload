@@ -39,6 +39,9 @@ public class Scheduler {
     @Value("${extract.download.url}")
     private String extractDownloadUrl;
 
+    @Value("${use.ssl}")
+    private boolean useSSL;
+
     public Scheduler(PscRestApi pscRestApi) {
         this.pscRestApi = pscRestApi;
     }
@@ -49,7 +52,9 @@ public class Scheduler {
     @Scheduled(fixedRateString = "${schedule.rate.ms}")
     public void downloadAndParse() throws GeneralSecurityException, IOException {
 
-        SSLUtils.initSSLContext(cert, key, ca);
+        if (useSSL) {
+            SSLUtils.initSSLContext(cert, key, ca);
+        }
         String zipFile = SSLUtils.downloadFile(extractDownloadUrl, filesDirectory);
 
         if (zipFile != null && FilesUtils.unzip(zipFile)) {

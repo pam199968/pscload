@@ -68,15 +68,6 @@ public class SSLUtils {
                 TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(trustStore);
 
-/*
-        List<X509Certificate> caCerts =
-                Arrays.stream(trustManagerFactory.getTrustManagers()).filter(X509TrustManager.class::isInstance)
-                        .map(X509TrustManager.class::cast).map(tm -> Arrays.asList(tm.getAcceptedIssuers()))
-                        .flatMap(Collection::stream).collect(Collectors.toList());
-
-        log.debug(caCerts.get(0).getIssuerX500Principal().getName());
-*/
-
         final SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
         sslContext.init(keyManagerFactory.getKeyManagers(),
                 trustManagerFactory.getTrustManagers(),
