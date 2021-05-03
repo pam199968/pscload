@@ -1,25 +1,39 @@
 package fr.ans.psc.pscload.component;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import fr.ans.psc.pscload.service.PscRestApi;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
 
+@RabbitListener(queues = "${queue.name}")
 @Component
 public class Receiver {
 
     // fancy way to receive messages, not using it for now
 
-    /**
-     * The logger.
-     */
-    private static final Logger log = LoggerFactory.getLogger(Receiver.class);
+    @Autowired
+    private final PscRestApi pscRestApi;
 
-    private CountDownLatch latch = new CountDownLatch(1);
+    @Autowired
+    private final JsonFormatter jsonFormatter;
 
+    @Value("${ps.api.base.url}")
+    private String apiBaseUrl;
+
+    public Receiver(PscRestApi pscRestApi, JsonFormatter jsonFormatter) {
+        this.pscRestApi = pscRestApi;
+        this.jsonFormatter = jsonFormatter;
+    }
+
+    private final CountDownLatch latch = new CountDownLatch(1);
+
+    @RabbitHandler
     public void receiveMessage(String message) {
-        log.info("Received <{}>", message);
+        pscRestApi.put(apiBaseUrl, jsonFormatter.psFromMessage(message));
         latch.countDown();
     }
 

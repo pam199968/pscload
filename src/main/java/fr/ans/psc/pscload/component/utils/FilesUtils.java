@@ -53,7 +53,7 @@ public class FilesUtils {
     protected static boolean unzip(String zipFilePath, boolean clean) throws IOException {
         File zip = new File(zipFilePath);
         File destDir = zip.getParentFile();
-        File[] existingFiles = destDir.listFiles();
+        File[] existingFiles = zipsTextsNSers(destDir.listFiles()).get("texts").toArray(new File[0]);
 
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));
@@ -65,7 +65,7 @@ public class FilesUtils {
             // check only entries that are files
             if (!zipEntry.isDirectory()) {
                 // check if newer than what exists, otherwise go to next entry
-                if (existingFiles != null && isNew(newFile, existingFiles)) {
+                if (isNew(newFile, existingFiles)) {
                     goAhead = true;
                 } else {
                     zipEntry = zis.getNextEntry();
