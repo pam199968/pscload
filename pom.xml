@@ -21,16 +21,26 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-amqp</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
@@ -98,7 +108,7 @@
 			<plugin>
 				<groupId>com.google.cloud.tools</groupId>
 				<artifactId>jib-maven-plugin</artifactId>
-				<version>2.7.1</version>
+				<version>3.0.0</version>
 				<configuration>
 					<from>
 						<image>openjdk:11-slim-buster</image>
@@ -111,7 +121,7 @@
 						</tags>
 					</to>
 					<container>
-						<user>daemon:daemon</user>
+						<user>root:root</user>
 						<mainClass>fr.ans.psc.pscload.PscloadApplication</mainClass>
 						<ports>
 							<port>8080</port>
@@ -122,6 +132,14 @@
 						<!--<creationTime>2020-09-01T10:15:30+09:00</creationTime>-->
 					</container>
 					<allowInsecureRegistries>true</allowInsecureRegistries>
+					<extraDirectories>
+						<paths>
+							<path>
+								<from>src/main/files-repo</from>
+								<into>/app/files-repo</into>
+							</path>
+						</paths>
+					</extraDirectories>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -16,12 +16,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 
 @SpringBootTest
@@ -29,8 +24,7 @@ class PscloadApplicationTests {
 
 	@Test
 	@Disabled
-	void downloadTest() throws UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
-			KeyManagementException, InvalidKeySpecException, IOException, CertificateException {
+	void downloadTest() throws GeneralSecurityException, IOException {
 
 		SSLUtils.initSSLContext("src/test/resources/certificate.pem", "src/test/resources/key.pem", "src/test/resources/caCert.pem");
 		SSLUtils.downloadFile("https://service.annuaire.sante.fr/annuaire-sante-webservices/V300/services/extraction/Extraction_ProSanteConnect", "src/test/resources/download");

@@ -8,6 +8,8 @@ import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import fr.ans.psc.pscload.model.object.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -17,9 +19,15 @@ import java.util.Map;
 
 public class ProfessionnelMapper {
 
+    /**
+     * The logger.
+     */
+    private static final Logger log = LoggerFactory.getLogger(ProfessionnelMapper.class);
+
     ProfessionnelMapper() {}
 
     public static Map<String, Professionnel> getPsMapFromFile(File file) throws FileNotFoundException {
+        log.info("loading {} into list of Ps", file.getName());
         Map<String, Professionnel> psMap = new HashMap<>();
         // ObjectRowProcessor converts the parsed values and gives you the resulting row.
         ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
@@ -61,11 +69,12 @@ public class ProfessionnelMapper {
 
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new FileReader(file));
-
+        log.info("loading complete!");
         return psMap;
     }
 
     public static void serialisePsMapToFile(Object psList, String fileName) throws FileNotFoundException {
+        log.info("serializing list of Ps to {}", fileName);
         Kryo kryo = new Kryo();
         kryo.register(HashMap.class, 9);
         kryo.register(ArrayList.class, 10);
@@ -78,9 +87,11 @@ public class ProfessionnelMapper {
         Output output = new Output(new FileOutputStream(fileName));
         kryo.writeObjectOrNull(output, psList, HashMap.class);
         output.close();
+        log.info("serialization complete!");
     }
 
     public static Map<String, Professionnel> deserialiseFileToPsMap(File file) throws FileNotFoundException {
+        log.info("deserializing {} to list of Ps", file.getName());
         Kryo kryo = new Kryo();
         kryo.register(HashMap.class, 9);
         kryo.register(ArrayList.class, 10);
@@ -94,6 +105,7 @@ public class ProfessionnelMapper {
         Map<String, Professionnel> psList = kryo.readObjectOrNull(input, HashMap.class);
         input.close();
 
+        log.info("deserialization complete!");
         return psList;
     }
 

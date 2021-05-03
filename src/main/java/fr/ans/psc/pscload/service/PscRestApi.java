@@ -10,6 +10,8 @@ import fr.ans.psc.pscload.model.object.SituationExercice;
 import fr.ans.psc.pscload.model.object.response.PsListResponse;
 import fr.ans.psc.pscload.model.object.response.PsResponse;
 import okhttp3.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,12 +20,18 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The type Psc rest api.
  */
 @Service
 public class PscRestApi {
+
+    /**
+     * The logger.
+     */
+    private static final Logger log = LoggerFactory.getLogger(PscRestApi.class);
 
     private final Request.Builder requestBuilder;
 
@@ -73,8 +81,9 @@ public class PscRestApi {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
-            System.out.println(response.body().string());
-            return jsonFormatter.psListFromJson(response.body().string());
+            String responseBody = Objects.requireNonNull(response.body()).string();
+            log.info("response body: {}", responseBody);
+            return jsonFormatter.psListFromJson(Objects.requireNonNull(response.body()).string());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -95,8 +104,9 @@ public class PscRestApi {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
-            System.out.println(response.body().string());
-            return jsonFormatter.psFromJson(response.body().string());
+            String responseBody = Objects.requireNonNull(response.body()).string();
+            log.info("response body: {}", responseBody);
+            return jsonFormatter.psFromJson(Objects.requireNonNull(response.body()).string());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -120,7 +130,8 @@ public class PscRestApi {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
-            System.out.println(response.body().string());
+            String responseBody = Objects.requireNonNull(response.body()).string();
+            log.info("response body: {}", responseBody);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -143,7 +154,8 @@ public class PscRestApi {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
-            System.out.println(response.body().string());
+            String responseBody = Objects.requireNonNull(response.body()).string();
+            log.info("response body: {}", responseBody);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -163,7 +175,8 @@ public class PscRestApi {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
-            System.out.println(response.body().string());
+            String responseBody = Objects.requireNonNull(response.body()).string();
+            log.info("response body: {}", responseBody);
         } catch (IOException e) {
             e.printStackTrace();
         }

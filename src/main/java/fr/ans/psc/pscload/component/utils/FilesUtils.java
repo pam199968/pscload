@@ -1,5 +1,8 @@
 package fr.ans.psc.pscload.component.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -17,6 +20,11 @@ import java.util.zip.ZipInputStream;
  * The type Files utils.
  */
 public class FilesUtils {
+
+    /**
+     * The logger.
+     */
+    private static final Logger log = LoggerFactory.getLogger(FilesUtils.class);
 
     /**
      * Instantiates a new Files utils.
@@ -45,7 +53,7 @@ public class FilesUtils {
     protected static boolean unzip(String zipFilePath, boolean clean) throws IOException {
         File zip = new File(zipFilePath);
         File destDir = zip.getParentFile();
-        File[] existingFiles = destDir.listFiles();
+        File[] existingFiles = zipsTextsNSers(destDir.listFiles()).get("texts").toArray(new File[0]);
 
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));
@@ -57,7 +65,7 @@ public class FilesUtils {
             // check only entries that are files
             if (!zipEntry.isDirectory()) {
                 // check if newer than what exists, otherwise go to next entry
-                if (existingFiles != null && isNew(newFile, existingFiles)) {
+                if (isNew(newFile, existingFiles)) {
                     goAhead = true;
                 } else {
                     zipEntry = zis.getNextEntry();
@@ -69,18 +77,21 @@ public class FilesUtils {
                     throw new IOException("Failed to create directory " + parent);
                 }
                 // write file content
+                log.info("unzipping into {}", newFile.getName());
                 FileOutputStream fos = new FileOutputStream(newFile);
                 int len;
                 while ((len = zis.read(buffer)) > 0) {
                     fos.write(buffer, 0, len);
                 }
                 fos.close();
+                log.info("unzip complete!");
             }
             zipEntry = zis.getNextEntry();
         }
         zis.closeEntry();
         zis.close();
         if (clean) {
+            log.info("clean set to true, deleting {}", zip.getName());
             zip.delete();
         }
         return goAhead;
