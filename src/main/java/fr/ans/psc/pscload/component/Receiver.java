@@ -21,6 +21,8 @@ public class Receiver {
     @Autowired
     private final JsonFormatter jsonFormatter;
 
+    private final CountDownLatch latch = new CountDownLatch(1);
+
     @Value("${ps.api.base.url}")
     private String apiBaseUrl;
 
@@ -28,8 +30,6 @@ public class Receiver {
         this.pscRestApi = pscRestApi;
         this.jsonFormatter = jsonFormatter;
     }
-
-    private final CountDownLatch latch = new CountDownLatch(1);
 
     @RabbitHandler
     public void receiveMessage(String message) {
