@@ -32,9 +32,6 @@ public class Loader {
     @Value("${files.directory}")
     private String filesDirectory;
 
-    @Value("${extract.download.url}")
-    private String extractDownloadUrl;
-
     @Value("${use.ssl}")
     private boolean useSSL;
 
@@ -42,11 +39,11 @@ public class Loader {
         this.pscRestApi = pscRestApi;
     }
 
-    public void downloadAndParse() throws GeneralSecurityException, IOException {
+    public void downloadAndParse(String downloadUrl) throws GeneralSecurityException, IOException {
         if (useSSL) {
             SSLUtils.initSSLContext(cert, key, ca);
         }
-        String zipFile = SSLUtils.downloadFile(extractDownloadUrl, filesDirectory);
+        String zipFile = SSLUtils.downloadFile(downloadUrl, filesDirectory);
 
         if (zipFile != null && FilesUtils.unzip(zipFile)) {
             diffOrLoad();

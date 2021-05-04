@@ -20,6 +20,9 @@ public class Scheduler {
     @Value("${enable.scheduler:true}")
     private boolean enabled;
 
+    @Value("${extract.download.url}")
+    private String extractDownloadUrl;
+
     public Scheduler(Loader loader) {
         this.loader = loader;
     }
@@ -30,7 +33,7 @@ public class Scheduler {
     @Scheduled(fixedRateString = "${schedule.rate.ms}")
     public void run() throws GeneralSecurityException, IOException {
         if (enabled) {
-            loader.downloadAndParse();
+            loader.downloadAndParse(extractDownloadUrl);
         }
     }
 }
