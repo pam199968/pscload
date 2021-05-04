@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
@@ -28,6 +30,12 @@ class HelloController {
     @Value("${files.directory}")
     private String filesDirectory;
 
+    @Value("${test.download.url}")
+    private String testDownloadUrl;
+
+    @Value("${extract.download.url}")
+    private String extractDownloadUrl;
+
     HelloController(Loader loader) {
         this.loader = loader;
     }
@@ -45,9 +53,19 @@ class HelloController {
     }
 
     @GetMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String forceLoad() throws IOException, GeneralSecurityException {
-        loader.downloadAndParse();
+    public String load() throws IOException, GeneralSecurityException {
+        log.info("loading from {}", extractDownloadUrl);
+        loader.downloadAndParse(extractDownloadUrl);
         log.info("loading complete!");
+        return "loading complete";
+    }
+
+    @GetMapping(value = "/loadTest", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public String loadTest(@RequestParam String fileName) throws GeneralSecurityException, IOException {
+        String downloadUrl = testDownloadUrl + fileName + ".zip";
+        log.info("loading from {}", downloadUrl);
+        loader.downloadAndParse(downloadUrl);
         return "loading complete";
     }
 

@@ -123,6 +123,9 @@
 					<container>
 						<user>root:root</user>
 						<mainClass>fr.ans.psc.pscload.PscloadApplication</mainClass>
+						<args>
+							<arg>--server.servlet.context-path=/pscload/v1</arg>
+						</args>
 						<ports>
 							<port>8080</port>
 						</ports>

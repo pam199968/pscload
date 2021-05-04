@@ -13,8 +13,6 @@ import java.util.concurrent.CountDownLatch;
 @Component
 public class Receiver {
 
-    // fancy way to receive messages, not using it for now
-
     @Autowired
     private final PscRestApi pscRestApi;
 
@@ -40,5 +38,4 @@ public class Receiver {
     public CountDownLatch getLatch() {
         return latch;
     }
-
 }

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 
@@ -73,11 +74,9 @@ public class PscRestApi {
      * @return the ps list
      */
     public PsListResponse getPsList(String url) {
-
         Request request = requestBuilder
                 .url(url)
                 .build();
-
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
@@ -85,7 +84,7 @@ public class PscRestApi {
             log.info("response body: {}", responseBody);
             return jsonFormatter.psListFromJson(Objects.requireNonNull(response.body()).string());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("error: {}", e.getMessage());
         }
         return null;
     }
@@ -100,7 +99,6 @@ public class PscRestApi {
         Request request = requestBuilder
                 .url(url)
                 .build();
-
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
@@ -108,7 +106,7 @@ public class PscRestApi {
             log.info("response body: {}", responseBody);
             return jsonFormatter.psFromJson(Objects.requireNonNull(response.body()).string());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("error: {}", e.getMessage());
         }
         return null;
     }
@@ -121,20 +119,11 @@ public class PscRestApi {
      */
     public void put(String url, String json) {
         RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-
         Request request = requestBuilder
                 .url(url)
                 .put(body)
                 .build();
-
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            String responseBody = Objects.requireNonNull(response.body()).string();
-            log.info("response body: {}", responseBody);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendRequest(request);
     }
 
     /**
@@ -145,20 +134,11 @@ public class PscRestApi {
      */
     public void post(String url, String json) {
         RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-
         Request request = requestBuilder
                 .url(url)
                 .post(body)
                 .build();
-
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            String responseBody = Objects.requireNonNull(response.body()).string();
-            log.info("response body: {}", responseBody);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendRequest(request);
     }
 
     /**
@@ -171,14 +151,18 @@ public class PscRestApi {
                 .url(url)
                 .delete()
                 .build();
+        sendRequest(request);
+    }
 
+    private void sendRequest(Request request) {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
             String responseBody = Objects.requireNonNull(response.body()).string();
             log.info("response body: {}", responseBody);
+            response.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("error: {}", e.getMessage());
         }
     }
 
@@ -188,9 +172,8 @@ public class PscRestApi {
      * @param psMap the ps map
      */
     public void uploadPsMap(Map<String, Professionnel> psMap) {
-        for (Professionnel ps : psMap.values()) {
-            put(apiBaseUrl, jsonFormatter.jsonFromObject(ps));
-        }
+        HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
+        psSet.parallelStream().forEach(ps -> put(apiBaseUrl, jsonFormatter.jsonFromObject(ps)));
     }
 
     /**
@@ -214,7 +197,6 @@ public class PscRestApi {
      * @param right the right
      */
     public void diffUpdatePs(Professionnel left, Professionnel right) {
-
         String psUrl = apiBaseUrl + '/' + URLEncoder.encode(left.getNationalId(), StandardCharsets.UTF_8);
 
         if (left.nakedHash() != right.nakedHash()) {
@@ -240,7 +222,6 @@ public class PscRestApi {
     }
 
     private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String professionsUrl) {
-
         String exProUrl = professionsUrl + '/' + URLEncoder.encode(leftExPro.getKey(), StandardCharsets.UTF_8);
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
