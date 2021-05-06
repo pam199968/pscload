@@ -30,7 +30,7 @@ public class Scheduler {
     /**
      * Download and parse.
      */
-    @Scheduled(fixedRateString = "${schedule.rate.ms}")
+    @Scheduled(fixedDelayString = "${schedule.rate.ms}")
     public void run() throws GeneralSecurityException, IOException {
         if (enabled) {
             loader.downloadAndParse(extractDownloadUrl);

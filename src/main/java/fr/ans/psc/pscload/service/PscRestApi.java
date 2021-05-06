@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 
 /**
  * The type Psc rest api.
@@ -43,6 +44,9 @@ public class PscRestApi {
 
     @Value("${ps.api.base.url}")
     private String apiBaseUrl;
+
+    @Value("${custom.thread.count}")
+    private int numOfThreads;
 
     /**
      * Instantiates a new Psc rest api.
@@ -173,7 +177,13 @@ public class PscRestApi {
      */
     public void uploadPsMap(Map<String, Professionnel> psMap) {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
-        psSet.parallelStream().forEach(ps -> put(apiBaseUrl, jsonFormatter.jsonFromObject(ps)));
+        ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads);
+        try {
+            customThreadPool.submit(
+                    () -> psSet.parallelStream().forEach(ps -> put(apiBaseUrl, jsonFormatter.jsonFromObject(ps))));
+        } finally {
+            customThreadPool.shutdown();
+        }
     }
 
     /**

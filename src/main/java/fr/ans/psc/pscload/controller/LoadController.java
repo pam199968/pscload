@@ -17,12 +17,12 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 @RestController
-class HelloController {
+class LoadController {
 
     /**
      * The logger.
      */
-    private static final Logger log = LoggerFactory.getLogger(HelloController.class);
+    private static final Logger log = LoggerFactory.getLogger(LoadController.class);
 
     @Autowired
     private final Loader loader;
@@ -36,7 +36,7 @@ class HelloController {
     @Value("${extract.download.url}")
     private String extractDownloadUrl;
 
-    HelloController(Loader loader) {
+    LoadController(Loader loader) {
         this.loader = loader;
     }
 
