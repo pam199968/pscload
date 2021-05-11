@@ -53,7 +53,7 @@ public class FilesUtils {
     protected static boolean unzip(String zipFilePath, boolean clean) throws IOException {
         File zip = new File(zipFilePath);
         File destDir = zip.getParentFile();
-        File[] existingFiles = zipsTextsNSers(destDir.listFiles()).get("texts").toArray(new File[0]);
+        File[] existingFiles = zipsTextsNSers(destDir.listFiles()).get("txts").toArray(new File[0]);
 
         byte[] buffer = new byte[1024];
         ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));
@@ -120,7 +120,7 @@ public class FilesUtils {
         Map<String, List<File>> filesMap = zipsTextsNSers(new File(filesDirectory).listFiles());
 
         List<File> listOfZips = filesMap.get("zips");
-        List<File> listOfExtracts = filesMap.get("texts");
+        List<File> listOfExtracts = filesMap.get("txts");
         List<File> listOfSers = filesMap.get("sers");
 
         // Order files lists from oldest to newest by comparing parsed dates,
@@ -154,7 +154,7 @@ public class FilesUtils {
     public static Map<String, File> getLatestExtAndSer(String filesDirectory) throws IOException {
         Map<String, List<File>> filesMap = zipsTextsNSers(new File(filesDirectory).listFiles());
 
-        List<File> listOfExtracts = filesMap.get("texts");
+        List<File> listOfExtracts = filesMap.get("txts");
         List<File> listOfSers = filesMap.get("sers");
 
         // Order files lists from oldest to newest by comparing parsed dates,
@@ -165,9 +165,9 @@ public class FilesUtils {
         Map<String, File> latestFiles = new HashMap<>();
 
         if (listOfExtracts.isEmpty()) {
-            latestFiles.put("ext", null);
+            latestFiles.put("txt", null);
         } else {
-            latestFiles.put("ext", listOfExtracts.get(listOfExtracts.size() -1));
+            latestFiles.put("txt", listOfExtracts.get(listOfExtracts.size() -1));
         }
 
         if (listOfSers.isEmpty()) {
@@ -189,7 +189,7 @@ public class FilesUtils {
     private static Map<String, List<File>> zipsTextsNSers(File[] listOfFiles) throws IOException {
         Map<String, List<File>> filesMap = new HashMap<>();
         filesMap.put("zips", new ArrayList<>());
-        filesMap.put("texts", new ArrayList<>());
+        filesMap.put("txts", new ArrayList<>());
         filesMap.put("sers", new ArrayList<>());
 
         for (File file : listOfFiles != null ? listOfFiles : new File[0]) {
@@ -199,7 +199,7 @@ public class FilesUtils {
             } else if (type != null && type.contains("zip")) {
                 filesMap.get("zips").add(file);
             } else if (type != null && type.contains("text")) {
-                filesMap.get("texts").add(file);
+                filesMap.get("txts").add(file);
             }
         }
         return filesMap;

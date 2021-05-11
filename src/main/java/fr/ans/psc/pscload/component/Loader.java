@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Map;
 
+/**
+ * The type Loader.
+ */
 @Component
 public class Loader {
 
@@ -35,10 +38,22 @@ public class Loader {
     @Value("${use.ssl}")
     private boolean useSSL;
 
+    /**
+     * Instantiates a new Loader.
+     *
+     * @param pscRestApi the psc rest api
+     */
     public Loader(PscRestApi pscRestApi) {
         this.pscRestApi = pscRestApi;
     }
 
+    /**
+     * Download and parse.
+     *
+     * @param downloadUrl the download url
+     * @throws GeneralSecurityException the general security exception
+     * @throws IOException              the io exception
+     */
     public void downloadAndParse(String downloadUrl) throws GeneralSecurityException, IOException {
         if (useSSL) {
             SSLUtils.initSSLContext(cert, key, ca);
@@ -51,11 +66,11 @@ public class Loader {
         }
     }
 
-    private void diffOrLoad() throws IOException {
+    public void diffOrLoad() throws IOException {
         Map<String, File> latestFiles = FilesUtils.getLatestExtAndSer(filesDirectory);
 
         File ogFile = latestFiles.get("ser");
-        File newFile = latestFiles.get("ext");
+        File newFile = latestFiles.get("txt");
 
         Map<String, Professionnel> newPsMap = ProfessionnelMapper.getPsMapFromFile(newFile);
 
