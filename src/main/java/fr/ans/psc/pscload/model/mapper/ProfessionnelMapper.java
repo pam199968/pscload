@@ -66,6 +66,7 @@ public class ProfessionnelMapper {
         parserSettings.getFormat().setDelimiter('|');
         parserSettings.setProcessor(rowProcessor);
         parserSettings.setHeaderExtractionEnabled(true);
+        parserSettings.setNullValue("");
 
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new FileReader(file));
