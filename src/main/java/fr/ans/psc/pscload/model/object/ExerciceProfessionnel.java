@@ -48,9 +48,13 @@ public class ExerciceProfessionnel implements Serializable {
         this.firstName = exPro.firstName;
     }
 
-    public String getKey() {
-        return Objects.toString(code, "") +
+    public String getCompositeId() {
+        String key = Objects.toString(code, "") +
                 Objects.toString(categoryCode, "");
+        if ("".equals(key)) {
+            return "ND";
+        }
+        return key;
     }
 
     public List<SavoirFaire> getExpertises() {

@@ -20,9 +20,13 @@ public class SavoirFaire implements Serializable {
         this.code = items[19];
     }
 
-    public String getKey() {
-        return Objects.toString(code, "") +
+    public String getCompositeId() {
+        String key = Objects.toString(code, "") +
                 Objects.toString(categoryCode, "");
+        if ("".equals(key)) {
+            return "ND";
+        }
+        return key;
     }
 
     @Override

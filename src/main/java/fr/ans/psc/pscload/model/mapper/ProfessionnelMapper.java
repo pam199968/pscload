@@ -38,17 +38,17 @@ public class ProfessionnelMapper {
                 if (mappedPs != null) {
                     ExerciceProfessionnel exPro = newPs.getProfessions().get(0);
                     ExerciceProfessionnel mappedExPro =
-                            mappedPs.getProfessions().stream().filter(exo -> exo.getKey().equals(exPro.getKey())).findAny().orElse(null);
+                            mappedPs.getProfessions().stream().filter(exo -> exo.getCompositeId().equals(exPro.getCompositeId())).findAny().orElse(null);
                     if (mappedExPro != null) {
                         SavoirFaire expertise = exPro.getExpertises().get(0);
                         SavoirFaire mappedExpertise =
-                                mappedExPro.getExpertises().stream().filter(expert -> expert.getKey().equals(expertise.getKey())).findAny().orElse(null);
+                                mappedExPro.getExpertises().stream().filter(expert -> expert.getCompositeId().equals(expertise.getCompositeId())).findAny().orElse(null);
                         if (mappedExpertise == null) {
                             mappedExPro.getExpertises().add(expertise);
                         }
                         SituationExercice situation = exPro.getWorkSituations().get(0);
                         SituationExercice mappedSituation =
-                                mappedExPro.getWorkSituations().stream().filter(situ -> situ.getKey().equals(situation.getKey())).findAny().orElse(null);
+                                mappedExPro.getWorkSituations().stream().filter(situ -> situ.getCompositeId().equals(situation.getCompositeId())).findAny().orElse(null);
                         if (mappedSituation == null) {
                             mappedExPro.getWorkSituations().add(situation);
                         }
