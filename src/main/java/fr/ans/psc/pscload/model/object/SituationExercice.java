@@ -32,9 +32,13 @@ public class SituationExercice implements Serializable {
         this.structure = new Structure(items);
     }
 
-    public String getKey() {
-        return Objects.toString(modeCode, "") +
-                Objects.toString(structure.getKey(), "");
+    public String getCompositeId() {
+        String key = Objects.toString(modeCode, "") +
+                Objects.toString(roleCode, "");
+        if ("".equals(key)) {
+            return "ND";
+        }
+        return key;
     }
 
     @Override

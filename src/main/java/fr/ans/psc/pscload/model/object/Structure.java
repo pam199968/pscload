@@ -112,10 +112,8 @@ public class Structure implements Serializable {
         this.registrationAuthority = items[48];
     }
 
-    public String getKey() {
-        return Objects.toString(siteSIRET, "") +
-                Objects.toString(siteSIREN, "") +
-                Objects.toString(siteFINESS, "");
+    public String getCompositeId() {
+        return Objects.toString(structureTechnicalId, "");
     }
 
     @Override

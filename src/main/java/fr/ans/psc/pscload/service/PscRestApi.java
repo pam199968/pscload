@@ -218,13 +218,13 @@ public class PscRestApi {
         String professionsUrl = psUrl + "/professions";
 
         Map<String, ExerciceProfessionnel> leftExPro = Maps
-                .uniqueIndex(left.getProfessions(), ExerciceProfessionnel::getKey);
+                .uniqueIndex(left.getProfessions(), ExerciceProfessionnel::getCompositeId);
         Map<String, ExerciceProfessionnel> rightExPro = Maps
-                .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getKey);
+                .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getCompositeId);
         MapDifference<String, ExerciceProfessionnel> diff = Maps.difference(leftExPro, rightExPro);
 
         diff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(professionsUrl + '/' + URLEncoder.encode(v.getKey(), StandardCharsets.UTF_8)));
+                delete(professionsUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
         diff.entriesOnlyOnRight().forEach((k, v) ->
                 post(professionsUrl, jsonFormatter.jsonFromObject(v)));
         diff.entriesDiffering().forEach((k, v) ->
@@ -232,7 +232,7 @@ public class PscRestApi {
     }
 
     private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String professionsUrl) {
-        String exProUrl = professionsUrl + '/' + URLEncoder.encode(leftExPro.getKey(), StandardCharsets.UTF_8);
+        String exProUrl = professionsUrl + '/' + URLEncoder.encode(leftExPro.getCompositeId(), StandardCharsets.UTF_8);
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
             // update ExPro basic attributes
@@ -243,33 +243,33 @@ public class PscRestApi {
         String expertiseUrl = exProUrl + "/expertises";
 
         Map<String, SavoirFaire> leftExpertises = Maps
-                .uniqueIndex(leftExPro.getExpertises(), SavoirFaire::getKey);
+                .uniqueIndex(leftExPro.getExpertises(), SavoirFaire::getCompositeId);
         Map<String, SavoirFaire> rightExpertises = Maps
-                .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getKey);
+                .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getCompositeId);
         MapDifference<String, SavoirFaire> expertiseDiff = Maps.difference(leftExpertises, rightExpertises);
 
         expertiseDiff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(expertiseUrl + '/' + URLEncoder.encode(v.getKey(), StandardCharsets.UTF_8)));
+                delete(expertiseUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
         expertiseDiff.entriesOnlyOnRight().forEach((k, v) ->
                 post(expertiseUrl, jsonFormatter.jsonFromObject(v)));
         expertiseDiff.entriesDiffering().forEach((k, v) ->
-                put(expertiseUrl + '/' + URLEncoder.encode(v.rightValue().getKey(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
+                put(expertiseUrl + '/' + URLEncoder.encode(v.rightValue().getCompositeId(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
 
         // diff situations
         String situationUrl = exProUrl + "/situations";
 
         Map<String, SituationExercice> leftSituations = Maps
-                .uniqueIndex(leftExPro.getWorkSituations(), SituationExercice::getKey);
+                .uniqueIndex(leftExPro.getWorkSituations(), SituationExercice::getCompositeId);
         Map<String, SituationExercice> rightSituations = Maps
-                .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getKey);
+                .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getCompositeId);
         MapDifference<String, SituationExercice> situationDiff = Maps.difference(leftSituations, rightSituations);
 
         situationDiff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(situationUrl + '/' + URLEncoder.encode(v.getKey(), StandardCharsets.UTF_8)));
+                delete(situationUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
         situationDiff.entriesOnlyOnRight().forEach((k, v) ->
                 post(situationUrl, jsonFormatter.jsonFromObject(v)));
         situationDiff.entriesDiffering().forEach((k, v) ->
-                put(situationUrl + '/' + URLEncoder.encode(v.rightValue().getKey(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
+                put(situationUrl + '/' + URLEncoder.encode(v.rightValue().getCompositeId(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
 
     }
 }

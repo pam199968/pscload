@@ -49,8 +49,8 @@ public class JsonFormatter {
             JsonArray array = new JsonArray();
 
             for (Object child : src) {
-                if ((child instanceof SavoirFaire && ((SavoirFaire) child).getKey().equals("")) ||
-                        (child instanceof SituationExercice && ((SituationExercice) child).getKey().equals(""))) {
+                if ((child instanceof SavoirFaire && ((SavoirFaire) child).getCompositeId().equals("")) ||
+                        (child instanceof SituationExercice && ((SituationExercice) child).getCompositeId().equals(""))) {
                     // do nothing
                 } else {
                     JsonElement element = context.serialize(child);
