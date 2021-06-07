@@ -1,4 +1,4 @@
-package fr.ans.psc.pscload.model.object;
+package fr.ans.psc.pscload.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -48,7 +48,7 @@ public class ExerciceProfessionnel implements Serializable {
         this.firstName = exPro.firstName;
     }
 
-    public String getCompositeId() {
+    public String getProfessionId() {
         String key = Objects.toString(code, "") +
                 Objects.toString(categoryCode, "");
         if ("".equals(key)) {

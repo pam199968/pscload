@@ -1,4 +1,4 @@
-package fr.ans.psc.pscload.model.object;
+package fr.ans.psc.pscload.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -112,7 +112,7 @@ public class Structure implements Serializable {
         this.registrationAuthority = items[48];
     }
 
-    public String getCompositeId() {
+    public String getStructureId() {
         return Objects.toString(structureTechnicalId, "");
     }
 

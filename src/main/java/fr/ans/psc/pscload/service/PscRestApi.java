@@ -3,12 +3,9 @@ package fr.ans.psc.pscload.service;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
-import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
-import fr.ans.psc.pscload.model.object.Professionnel;
-import fr.ans.psc.pscload.model.object.SavoirFaire;
-import fr.ans.psc.pscload.model.object.SituationExercice;
-import fr.ans.psc.pscload.model.object.response.PsListResponse;
-import fr.ans.psc.pscload.model.object.response.PsResponse;
+import fr.ans.psc.pscload.model.*;
+import fr.ans.psc.pscload.model.response.PsListResponse;
+import fr.ans.psc.pscload.model.response.PsResponse;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +39,7 @@ public class PscRestApi {
     @Autowired
     private final JsonFormatter jsonFormatter;
 
-    @Value("${ps.api.base.url}")
+    @Value("${api.base.url}")
     private String apiBaseUrl;
 
     @Value("${custom.thread.count}")
@@ -180,10 +177,35 @@ public class PscRestApi {
         ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads);
         try {
             customThreadPool.submit(
-                    () -> psSet.parallelStream().forEach(ps -> put(apiBaseUrl, jsonFormatter.jsonFromObject(ps))));
+                    () -> psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
         } finally {
             customThreadPool.shutdown();
         }
+    }
+
+    public void uploadStructureMap(Map<String, Structure> structureMap) {
+        HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
+        ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads);
+        try {
+            customThreadPool.submit(
+                    () -> structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure))));
+        } finally {
+            customThreadPool.shutdown();
+        }
+    }
+
+    /**
+     * Diff structure maps.
+     *
+     * @param original the original
+     * @param revised  the revised
+     */
+    public void diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
+        MapDifference<String, Structure> diff = Maps.difference(original, revised);
+        diff.entriesOnlyOnLeft().forEach((k, v) ->
+                delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8)));
+        diff.entriesOnlyOnRight().forEach((k, v) -> post(getStructureUrl(), jsonFormatter.jsonFromObject(v)));
+        diff.entriesDiffering().forEach((k, v) -> put(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())));
     }
 
     /**
@@ -194,9 +216,8 @@ public class PscRestApi {
      */
     public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
         MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
-        diff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(apiBaseUrl + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
-        diff.entriesOnlyOnRight().forEach((k, v) -> post(apiBaseUrl, jsonFormatter.jsonFromObject(v)));
+        diff.entriesOnlyOnLeft().forEach((k, v) -> delete(getPsUrl(v.getNationalId())));
+        diff.entriesOnlyOnRight().forEach((k, v) -> post(getPsUrl(), jsonFormatter.jsonFromObject(v)));
         diff.entriesDiffering().forEach((k, v) -> diffUpdatePs(v.leftValue(), v.rightValue()));
     }
 
@@ -207,7 +228,7 @@ public class PscRestApi {
      * @param right the right
      */
     public void diffUpdatePs(Professionnel left, Professionnel right) {
-        String psUrl = apiBaseUrl + '/' + URLEncoder.encode(left.getNationalId(), StandardCharsets.UTF_8);
+        String psUrl = getPsUrl(left.getNationalId());
 
         if (left.nakedHash() != right.nakedHash()) {
             // update Ps basic attributes
@@ -215,24 +236,19 @@ public class PscRestApi {
         }
 
         // diff professions
-        String professionsUrl = psUrl + "/professions";
-
         Map<String, ExerciceProfessionnel> leftExPro = Maps
-                .uniqueIndex(left.getProfessions(), ExerciceProfessionnel::getCompositeId);
+                .uniqueIndex(left.getProfessions(), ExerciceProfessionnel::getProfessionId);
         Map<String, ExerciceProfessionnel> rightExPro = Maps
-                .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getCompositeId);
+                .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getProfessionId);
         MapDifference<String, ExerciceProfessionnel> diff = Maps.difference(leftExPro, rightExPro);
 
-        diff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(professionsUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
-        diff.entriesOnlyOnRight().forEach((k, v) ->
-                post(professionsUrl, jsonFormatter.jsonFromObject(v)));
-        diff.entriesDiffering().forEach((k, v) ->
-                diffUpdateExPro(v.leftValue(), v.rightValue(), professionsUrl));
+        diff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExProUrl(psUrl, v.getProfessionId())));
+        diff.entriesOnlyOnRight().forEach((k, v) -> post(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)));
+        diff.entriesDiffering().forEach((k, v) -> diffUpdateExPro(v.leftValue(), v.rightValue(), psUrl));
     }
 
-    private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String professionsUrl) {
-        String exProUrl = professionsUrl + '/' + URLEncoder.encode(leftExPro.getCompositeId(), StandardCharsets.UTF_8);
+    private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String psUrl) {
+        String exProUrl = getExProUrl(psUrl, leftExPro.getProfessionId());
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
             // update ExPro basic attributes
@@ -240,36 +256,68 @@ public class PscRestApi {
         }
 
         // diff expertises
-        String expertiseUrl = exProUrl + "/expertises";
-
         Map<String, SavoirFaire> leftExpertises = Maps
-                .uniqueIndex(leftExPro.getExpertises(), SavoirFaire::getCompositeId);
+                .uniqueIndex(leftExPro.getExpertises(), SavoirFaire::getExpertiseId);
         Map<String, SavoirFaire> rightExpertises = Maps
-                .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getCompositeId);
+                .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getExpertiseId);
         MapDifference<String, SavoirFaire> expertiseDiff = Maps.difference(leftExpertises, rightExpertises);
 
-        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(expertiseUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
-        expertiseDiff.entriesOnlyOnRight().forEach((k, v) ->
-                post(expertiseUrl, jsonFormatter.jsonFromObject(v)));
+        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExpertiseUrl(exProUrl, v.getExpertiseId())));
+        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> post(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v)));
         expertiseDiff.entriesDiffering().forEach((k, v) ->
-                put(expertiseUrl + '/' + URLEncoder.encode(v.rightValue().getCompositeId(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
+                put(getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue())));
 
         // diff situations
-        String situationUrl = exProUrl + "/situations";
-
         Map<String, SituationExercice> leftSituations = Maps
-                .uniqueIndex(leftExPro.getWorkSituations(), SituationExercice::getCompositeId);
+                .uniqueIndex(leftExPro.getWorkSituations(), SituationExercice::getSituationId);
         Map<String, SituationExercice> rightSituations = Maps
-                .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getCompositeId);
+                .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getSituationId);
         MapDifference<String, SituationExercice> situationDiff = Maps.difference(leftSituations, rightSituations);
 
-        situationDiff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(situationUrl + '/' + URLEncoder.encode(v.getCompositeId(), StandardCharsets.UTF_8)));
-        situationDiff.entriesOnlyOnRight().forEach((k, v) ->
-                post(situationUrl, jsonFormatter.jsonFromObject(v)));
+        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getSituationUrl(exProUrl, v.getSituationId())));
+        situationDiff.entriesOnlyOnRight().forEach((k, v) -> post(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v)));
         situationDiff.entriesDiffering().forEach((k, v) ->
-                put(situationUrl + '/' + URLEncoder.encode(v.rightValue().getCompositeId(), StandardCharsets.UTF_8), jsonFormatter.jsonFromObject(v.rightValue())));
-
+                put(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())));
     }
+
+    public String getPsUrl() {
+        return apiBaseUrl + "/ps";
+    }
+
+    public String getPsUrl(String id) {
+        return getPsUrl() + "/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
+    }
+
+    public String getExProUrl(String psUrl) {
+        return psUrl + "/professions";
+    }
+
+    public String getExProUrl(String psUrl, String id) {
+        return getExProUrl(psUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
+    }
+
+    public String getExpertiseUrl(String exProUrl) {
+        return  exProUrl + "/expertises";
+    }
+
+    public String getExpertiseUrl(String exProUrl, String id) {
+        return  getExpertiseUrl(exProUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
+    }
+
+    public String getSituationUrl(String exProUrl) {
+        return  exProUrl + "/situations";
+    }
+
+    public String getSituationUrl(String exProUrl, String id) {
+        return  getSituationUrl(exProUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
+    }
+
+    public String getStructureUrl() {
+        return apiBaseUrl + "/structures";
+    }
+
+    public String getStructureUrl(String id) {
+        return getStructureUrl() + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
+    }
+
 }

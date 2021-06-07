@@ -1,12 +1,9 @@
 package fr.ans.psc.pscload.component;
 
 import com.google.gson.*;
-import fr.ans.psc.pscload.model.object.ExerciceProfessionnel;
-import fr.ans.psc.pscload.model.object.Professionnel;
-import fr.ans.psc.pscload.model.object.SavoirFaire;
-import fr.ans.psc.pscload.model.object.SituationExercice;
-import fr.ans.psc.pscload.model.object.response.PsListResponse;
-import fr.ans.psc.pscload.model.object.response.PsResponse;
+import fr.ans.psc.pscload.model.*;
+import fr.ans.psc.pscload.model.response.PsListResponse;
+import fr.ans.psc.pscload.model.response.PsResponse;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Type;
@@ -49,8 +46,8 @@ public class JsonFormatter {
             JsonArray array = new JsonArray();
 
             for (Object child : src) {
-                if ((child instanceof SavoirFaire && ((SavoirFaire) child).getCompositeId().equals("")) ||
-                        (child instanceof SituationExercice && ((SituationExercice) child).getCompositeId().equals(""))) {
+                if ((child instanceof SavoirFaire && ((SavoirFaire) child).getExpertiseId().equals("")) ||
+                        (child instanceof SituationExercice && ((SituationExercice) child).getSituationId().equals(""))) {
                     // do nothing
                 } else {
                     JsonElement element = context.serialize(child);
@@ -71,6 +68,18 @@ public class JsonFormatter {
         String[] items = message.split("\\|", -1);
         Professionnel ps = new Professionnel(items);
         return jsonFromObject(ps);
+    }
+
+    /**
+     * Ps from message string.
+     *
+     * @param message the message
+     * @return the string
+     */
+    public String structureFromMessage(String message) {
+        String[] items = message.split("\\|", -1);
+        Structure structure = new Structure(items);
+        return jsonFromObject(structure);
     }
 
     /**

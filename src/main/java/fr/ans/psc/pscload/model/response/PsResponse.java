@@ -1,12 +1,12 @@
-package fr.ans.psc.pscload.model.object.response;
+package fr.ans.psc.pscload.model.response;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import fr.ans.psc.pscload.model.object.Professionnel;
+import fr.ans.psc.pscload.model.Professionnel;
 
 import java.io.Serializable;
 
-public class PsListResponse implements Serializable {
+public class PsResponse implements Serializable {
 
     @JsonProperty("status")
     private String status;
@@ -15,6 +15,6 @@ public class PsListResponse implements Serializable {
     private String message;
 
     @JsonProperty("data")
-    private Professionnel[] data;
+    private Professionnel data;
 
 }

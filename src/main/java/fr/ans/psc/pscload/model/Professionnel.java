@@ -1,4 +1,4 @@
-package fr.ans.psc.pscload.model.object;
+package fr.ans.psc.pscload.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

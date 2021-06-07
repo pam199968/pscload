@@ -2,8 +2,10 @@ package fr.ans.psc.pscload.component;
 
 import fr.ans.psc.pscload.component.utils.FilesUtils;
 import fr.ans.psc.pscload.component.utils.SSLUtils;
-import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
-import fr.ans.psc.pscload.model.object.Professionnel;
+import fr.ans.psc.pscload.mapper.Loader;
+import fr.ans.psc.pscload.mapper.Serializer;
+import fr.ans.psc.pscload.model.Professionnel;
+import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,10 +20,16 @@ import java.util.Map;
  * The type Loader.
  */
 @Component
-public class Loader {
+public class Parser {
 
     @Autowired
     private final PscRestApi pscRestApi;
+
+    @Autowired
+    private final Serializer serializer;
+
+    @Autowired
+    private final Loader loader;
 
     @Value("${cert.path}")
     private String cert;
@@ -40,11 +48,14 @@ public class Loader {
 
     /**
      * Instantiates a new Loader.
-     *
-     * @param pscRestApi the psc rest api
+     *  @param pscRestApi the psc rest api
+     * @param serializer serializer
+     * @param loader loader
      */
-    public Loader(PscRestApi pscRestApi) {
+    public Parser(PscRestApi pscRestApi, Serializer serializer, Loader loader) {
         this.pscRestApi = pscRestApi;
+        this.serializer = serializer;
+        this.loader = loader;
     }
 
     /**
@@ -72,16 +83,24 @@ public class Loader {
         File ogFile = latestFiles.get("ser");
         File newFile = latestFiles.get("txt");
 
-        Map<String, Professionnel> newPsMap = ProfessionnelMapper.getPsMapFromFile(newFile);
+        loader.loadFileToMap(newFile);
+
+        Map<String, Professionnel> newPsMap = loader.getPsMap();
+        Map<String, Structure> newStructureMap = loader.getStructureMap();
 
         if (ogFile == null) {
+            // first load
             pscRestApi.uploadPsMap(newPsMap);
+            pscRestApi.uploadStructureMap(newStructureMap);
         } else {
             // perform diff
-            pscRestApi.diffPsMaps(ProfessionnelMapper.deserialiseFileToPsMap(ogFile), newPsMap);
+            serializer.deserialiseFileToMaps(ogFile);
+            pscRestApi.diffPsMaps(serializer.getPsMap(), newPsMap);
+            pscRestApi.diffStructureMaps(serializer.getStructureMap(), newStructureMap);
         }
         // serialise latest extract
-        ProfessionnelMapper.serialisePsMapToFile(newPsMap, filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
+        serializer.serialiseMapsToFile(newPsMap, newStructureMap,
+                filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
     }
 
 }

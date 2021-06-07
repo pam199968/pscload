@@ -4,7 +4,6 @@ import fr.ans.psc.pscload.service.PscRestApi;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
@@ -21,9 +20,6 @@ public class Receiver {
 
     private final CountDownLatch latch = new CountDownLatch(1);
 
-    @Value("${ps.api.base.url}")
-    private String apiBaseUrl;
-
     public Receiver(PscRestApi pscRestApi, JsonFormatter jsonFormatter) {
         this.pscRestApi = pscRestApi;
         this.jsonFormatter = jsonFormatter;
@@ -31,7 +27,8 @@ public class Receiver {
 
     @RabbitHandler
     public void receiveMessage(String message) {
-        pscRestApi.put(apiBaseUrl, jsonFormatter.psFromMessage(message));
+        pscRestApi.put(pscRestApi.getPsUrl(), jsonFormatter.psFromMessage(message));
+        pscRestApi.put(pscRestApi.getStructureUrl(), jsonFormatter.structureFromMessage(message));
         latch.countDown();
     }
 
