@@ -1,4 +1,4 @@
-package fr.ans.psc.pscload.model.object;
+package fr.ans.psc.pscload.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -7,8 +7,8 @@ import java.util.Objects;
 
 public class SavoirFaire implements Serializable {
 
-    @JsonProperty("categoryCode")
-    private String categoryCode;
+    @JsonProperty("typeCode")
+    private String typeCode;
 
     @JsonProperty("code")
     private String code;
@@ -16,13 +16,13 @@ public class SavoirFaire implements Serializable {
     public SavoirFaire() {}
 
     public SavoirFaire(String[] items){
-        this.categoryCode = items[18];
+        this.typeCode = items[18];
         this.code = items[19];
     }
 
-    public String getCompositeId() {
-        String key = Objects.toString(code, "") +
-                Objects.toString(categoryCode, "");
+    public String getExpertiseId() {
+        String key = Objects.toString(typeCode, "") +
+                Objects.toString(code, "");
         if ("".equals(key)) {
             return "ND";
         }
@@ -34,16 +34,16 @@ public class SavoirFaire implements Serializable {
         if (this == o) return true;
         if (!(o instanceof SavoirFaire)) return false;
         SavoirFaire that = (SavoirFaire) o;
-        return Objects.equals(categoryCode, that.categoryCode) && Objects.equals(code, that.code);
+        return Objects.equals(typeCode, that.typeCode) && Objects.equals(code, that.code);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(categoryCode, code);
+        return Objects.hash(typeCode, code);
     }
 
     @Override
     public String toString() {
-        return categoryCode + '|' + code;
+        return typeCode + '|' + code;
     }
 }

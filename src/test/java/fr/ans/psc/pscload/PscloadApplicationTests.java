@@ -4,11 +4,14 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.component.utils.SSLUtils;
-import fr.ans.psc.pscload.model.mapper.ProfessionnelMapper;
-import fr.ans.psc.pscload.model.object.Professionnel;
+import fr.ans.psc.pscload.mapper.Loader;
+import fr.ans.psc.pscload.mapper.Serializer;
+import fr.ans.psc.pscload.model.Professionnel;
+import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
@@ -21,6 +24,12 @@ import java.util.Map;
 
 @SpringBootTest
 class PscloadApplicationTests {
+
+	@Autowired
+	Loader loader;
+
+	@Autowired
+	Serializer serializer;
 
 	@Test
 	@Disabled
@@ -61,7 +70,11 @@ class PscloadApplicationTests {
 
 		File file = new File("src/test/resources/download/Extraction_PSC_20001.txt");
 
-		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(file);
+		Loader loader = new Loader();
+		loader.loadFileToMap(file);
+
+		Map<String, Professionnel> original = loader.getPsMap();
+
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		PscRestApi pscRestApi = new PscRestApi();
@@ -81,12 +94,15 @@ class PscloadApplicationTests {
 		long startTime = System.currentTimeMillis();
 
 		File ogFile = new File("src/test/resources/download/Extraction_PSC_20001.txt");
-		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
-
-		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(ogFile);
+		Loader l1 = new Loader();
+		l1.loadFileToMap(ogFile);
+		Map<String, Professionnel> original = l1.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
-		Map<String, Professionnel> revised = ProfessionnelMapper.getPsMapFromFile(newFile);
+		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
+		Loader l2 = new Loader();
+		l2.loadFileToMap(newFile);
+		Map<String, Professionnel> revised = l2.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
@@ -106,20 +122,23 @@ class PscloadApplicationTests {
 
 	@Test
 	@Disabled
-	void firstParseAndSerializeAndDeserialize() throws FileNotFoundException {
+	void loadThenSerializeThenDeserializeTest() throws FileNotFoundException {
 		long startTime = System.currentTimeMillis();
 
 		File extFile = new File("src/test/resources/Extraction_PSC.txt");
 
 		//build simple lists of the lines of the two testfiles
-		Map<String, Professionnel> original = ProfessionnelMapper.getPsMapFromFile(extFile);
+		Loader loader = new Loader();
+		loader.loadFileToMap(extFile);
+		Map<String, Professionnel> originalPs = loader.getPsMap();
+		Map<String, Structure> originalStructure = loader.getStructureMap();
 		System.out.println(System.currentTimeMillis()-startTime);
-		ProfessionnelMapper.serialisePsMapToFile(original, "src/test/resources/Extraction_PSC.ser");
+		serializer.serialiseMapsToFile(originalPs, originalStructure, "src/test/resources/Extraction_PSC.ser");
 		File serFile = new File("src/test/resources/Extraction_PSC.ser");
 		System.out.println(System.currentTimeMillis()-startTime);
 
-		original.clear();
-		Map<String, Professionnel> des = ProfessionnelMapper.deserialiseFileToPsMap(serFile);
+		originalPs.clear();
+		serializer.deserialiseFileToMaps(serFile);
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 

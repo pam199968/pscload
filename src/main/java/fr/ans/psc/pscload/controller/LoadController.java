@@ -1,6 +1,6 @@
 package fr.ans.psc.pscload.controller;
 
-import fr.ans.psc.pscload.component.Loader;
+import fr.ans.psc.pscload.component.Parser;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ class LoadController {
     private static final Logger log = LoggerFactory.getLogger(LoadController.class);
 
     @Autowired
-    private final Loader loader;
+    private final Parser parser;
 
     @Value("${files.directory}")
     private String filesDirectory;
@@ -41,8 +41,8 @@ class LoadController {
     @Value("${extract.download.url}")
     private String extractDownloadUrl;
 
-    LoadController(Loader loader) {
-        this.loader = loader;
+    LoadController(Parser parser) {
+        this.parser = parser;
     }
 
     @GetMapping(value = "/check", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -75,7 +75,7 @@ class LoadController {
     @GetMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)
     public String load() throws IOException, GeneralSecurityException {
         log.info("loading from {}", extractDownloadUrl);
-        loader.downloadAndParse(extractDownloadUrl);
+        parser.downloadAndParse(extractDownloadUrl);
         log.info("loading complete!");
         return "loading complete";
     }
@@ -85,7 +85,7 @@ class LoadController {
     public String loadTest(@RequestParam String fileName) throws GeneralSecurityException, IOException {
         String downloadUrl = testDownloadUrl + fileName + ".zip";
         log.info("loading from {}", downloadUrl);
-        loader.downloadAndParse(downloadUrl);
+        parser.downloadAndParse(downloadUrl);
         return "loading complete";
     }
 
@@ -101,7 +101,7 @@ class LoadController {
     @GetMapping(value = "/run", produces = MediaType.APPLICATION_JSON_VALUE)
     public String run() throws IOException {
         log.info("running");
-        loader.diffOrLoad();
+        parser.diffOrLoad();
         log.info("run complete!");
         return "run complete";
     }
