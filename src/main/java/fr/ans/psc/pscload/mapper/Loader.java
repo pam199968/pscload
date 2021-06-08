@@ -64,6 +64,13 @@ public class Loader {
                                 mappedExPro.getWorkSituations().stream().filter(situ -> situ.getSituationId().equals(situation.getSituationId())).findAny().orElse(null);
                         if (mappedSituation == null) {
                             mappedExPro.getWorkSituations().add(situation);
+                        } else {
+                            StructureRef structureRef = situation.getStructures().get(0);
+                            StructureRef mappedStructureRef =
+                                    mappedSituation.getStructures().stream().filter(struct -> structureRef.getStructureId().equals(struct.getStructureId())).findAny().orElse(null);
+                            if (mappedStructureRef == null){
+                                mappedSituation.getStructures().add(structureRef);
+                            }
                         }
                     } else {
                         mappedPs.getProfessions().add(exPro);
