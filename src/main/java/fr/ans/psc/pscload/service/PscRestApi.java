@@ -174,24 +174,31 @@ public class PscRestApi {
      */
     public void uploadPsMap(Map<String, Professionnel> psMap) {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
-        ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads);
+        /*ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads-2);
         try {
             customThreadPool.submit(
                     () -> psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
         } finally {
             customThreadPool.shutdown();
-        }
+        }*/
+        psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps)));
     }
 
+    /**
+     * Upload structure map.
+     *
+     * @param structureMap the structure map
+     */
     public void uploadStructureMap(Map<String, Structure> structureMap) {
         HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
-        ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads);
+        /*ForkJoinPool customThreadPool = new ForkJoinPool(2);
         try {
             customThreadPool.submit(
                     () -> structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure))));
         } finally {
             customThreadPool.shutdown();
-        }
+        }*/
+        structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure)));
     }
 
     /**
@@ -280,42 +287,103 @@ public class PscRestApi {
                 put(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())));
     }
 
+    /**
+     * Gets ps url.
+     *
+     * @return the ps url
+     */
     public String getPsUrl() {
         return apiBaseUrl + "/ps";
     }
 
+    /**
+     * Gets ps url.
+     *
+     * @param id the id
+     * @return the ps url
+     */
     public String getPsUrl(String id) {
         return getPsUrl() + "/" + URLEncoder.encode(id, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Gets ex pro url.
+     *
+     * @param psUrl the ps url
+     * @return the ex pro url
+     */
     public String getExProUrl(String psUrl) {
         return psUrl + "/professions";
     }
 
+    /**
+     * Gets ex pro url.
+     *
+     * @param psUrl the ps url
+     * @param id    the id
+     * @return the ex pro url
+     */
     public String getExProUrl(String psUrl, String id) {
         return getExProUrl(psUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Gets expertise url.
+     *
+     * @param exProUrl the ex pro url
+     * @return the expertise url
+     */
     public String getExpertiseUrl(String exProUrl) {
         return  exProUrl + "/expertises";
     }
 
+    /**
+     * Gets expertise url.
+     *
+     * @param exProUrl the ex pro url
+     * @param id       the id
+     * @return the expertise url
+     */
     public String getExpertiseUrl(String exProUrl, String id) {
         return  getExpertiseUrl(exProUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Gets situation url.
+     *
+     * @param exProUrl the ex pro url
+     * @return the situation url
+     */
     public String getSituationUrl(String exProUrl) {
         return  exProUrl + "/situations";
     }
 
+    /**
+     * Gets situation url.
+     *
+     * @param exProUrl the ex pro url
+     * @param id       the id
+     * @return the situation url
+     */
     public String getSituationUrl(String exProUrl, String id) {
         return  getSituationUrl(exProUrl) + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Gets structure url.
+     *
+     * @return the structure url
+     */
     public String getStructureUrl() {
         return apiBaseUrl + "/structures";
     }
 
+    /**
+     * Gets structure url.
+     *
+     * @param id the id
+     * @return the structure url
+     */
     public String getStructureUrl(String id) {
         return getStructureUrl() + '/' + URLEncoder.encode(id, StandardCharsets.UTF_8);
     }
