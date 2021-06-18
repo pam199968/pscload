@@ -34,6 +34,10 @@ public class SituationExercice implements Serializable {
         this.structures.add(new StructureRef(items[28]));  // structureTechnicalId
     }
 
+    public List<StructureRef> getStructures() {
+        return structures;
+    }
+
     public String getSituationId() {
         String key = Objects.toString(modeCode, "") +
                 Objects.toString(activitySectorCode, "") +

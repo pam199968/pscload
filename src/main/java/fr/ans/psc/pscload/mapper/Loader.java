@@ -25,17 +25,9 @@ public class Loader {
      */
     private static final Logger log = LoggerFactory.getLogger(Loader.class);
 
-    private Map<String, Professionnel> psMap = new HashMap<>();
+    private final Map<String, Professionnel> psMap = new HashMap<>();
 
-    private Map<String, Structure> structureMap = new HashMap<>();
-
-    public Map<String, Professionnel> getPsMap() {
-        return psMap;
-    }
-
-    public Map<String, Structure> getStructureMap() {
-        return structureMap;
-    }
+    private final Map<String, Structure> structureMap = new HashMap<>();
 
     public void loadFileToMap(File file) throws FileNotFoundException {
         log.info("loading {} into list of Ps", file.getName());
@@ -49,31 +41,13 @@ public class Loader {
                 Professionnel psRow = new Professionnel(items);
                 Professionnel mappedPs = psMap.get(psRow.getNationalId());
                 if (mappedPs != null) {
-                    ExerciceProfessionnel exPro = psRow.getProfessions().get(0);
-                    ExerciceProfessionnel mappedExPro =
-                            mappedPs.getProfessions().stream().filter(exo -> exo.getProfessionId().equals(exPro.getProfessionId())).findAny().orElse(null);
-                    if (mappedExPro != null) {
-                        SavoirFaire expertise = exPro.getExpertises().get(0);
-                        SavoirFaire mappedExpertise =
-                                mappedExPro.getExpertises().stream().filter(expert -> expert.getExpertiseId().equals(expertise.getExpertiseId())).findAny().orElse(null);
-                        if (mappedExpertise == null) {
-                            mappedExPro.getExpertises().add(expertise);
-                        }
-                        SituationExercice situation = exPro.getWorkSituations().get(0);
-                        SituationExercice mappedSituation =
-                                mappedExPro.getWorkSituations().stream().filter(situ -> situ.getSituationId().equals(situation.getSituationId())).findAny().orElse(null);
-                        if (mappedSituation == null) {
-                            mappedExPro.getWorkSituations().add(situation);
-                        }
-                    } else {
-                        mappedPs.getProfessions().add(exPro);
-                    }
+                    mapExPro(psRow, mappedPs);
                 } else {
                     psMap.put(psRow.getNationalId(), psRow);
                 }
-
+                // get structure in map by its reference from row
                 if (structureMap.get(items[28]) == null) {
-                    Structure newStructure = new Structure(Arrays.asList(objects).toArray(new String[objects.length]));
+                    Structure newStructure = new Structure(items);
                     structureMap.put(newStructure.getStructureId(), newStructure);
                 }
             }
@@ -89,5 +63,39 @@ public class Loader {
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new BufferedReader(new FileReader(file)));
         log.info("loading complete!");
+    }
+
+    public Map<String, Professionnel> getPsMap() {
+        return psMap;
+    }
+
+    public Map<String, Structure> getStructureMap() {
+        return structureMap;
+    }
+
+    private void mapExPro(Professionnel psRow, Professionnel mappedPs) {
+        ExerciceProfessionnel exProRow = psRow.getProfessions().get(0);
+        mappedPs.getProfessions().stream()
+                .filter(exo -> exo.getProfessionId().equals(exProRow.getProfessionId())).findAny()
+                .ifPresentOrElse(exPro -> mapSituationNExpertise(exProRow, exPro), () -> mappedPs.getProfessions().add(exProRow));
+    }
+
+    private void mapSituationNExpertise(ExerciceProfessionnel exProRow, ExerciceProfessionnel mappedExPro) {
+        SavoirFaire expertiseRow = exProRow.getExpertises().get(0);
+        mappedExPro.getExpertises().stream()
+                .filter(expertise -> expertise.getExpertiseId().equals(expertiseRow.getExpertiseId())).findAny()
+                .ifPresentOrElse(expertise -> {}, () -> mappedExPro.getExpertises().add(expertiseRow));
+
+        SituationExercice situationRow = exProRow.getWorkSituations().get(0);
+        mappedExPro.getWorkSituations().stream()
+                .filter(situation -> situation.getSituationId().equals(situationRow.getSituationId())).findAny()
+                .ifPresentOrElse(situation -> mapStructureRef(situationRow, situation), () -> mappedExPro.getWorkSituations().add(situationRow));
+    }
+
+    private void mapStructureRef(SituationExercice situationRow, SituationExercice mappedSituation) {
+        StructureRef structureRefRow = situationRow.getStructures().get(0);
+        mappedSituation.getStructures().stream()
+                .filter(structureRef -> structureRef.getStructureId().equals(structureRefRow.getStructureId()))
+                .findAny().ifPresentOrElse(structureRef -> {}, () -> mappedSituation.getStructures().add(structureRefRow));
     }
 }
