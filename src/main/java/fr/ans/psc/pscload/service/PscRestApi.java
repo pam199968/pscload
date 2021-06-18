@@ -174,13 +174,6 @@ public class PscRestApi {
      */
     public void uploadPsMap(Map<String, Professionnel> psMap) {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
-        /*ForkJoinPool customThreadPool = new ForkJoinPool(numOfThreads-2);
-        try {
-            customThreadPool.submit(
-                    () -> psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
-        } finally {
-            customThreadPool.shutdown();
-        }*/
         psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps)));
     }
 
@@ -191,13 +184,6 @@ public class PscRestApi {
      */
     public void uploadStructureMap(Map<String, Structure> structureMap) {
         HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
-        /*ForkJoinPool customThreadPool = new ForkJoinPool(2);
-        try {
-            customThreadPool.submit(
-                    () -> structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure))));
-        } finally {
-            customThreadPool.shutdown();
-        }*/
         structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure)));
     }
 
