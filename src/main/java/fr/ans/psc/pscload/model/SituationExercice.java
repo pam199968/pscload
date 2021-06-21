@@ -22,7 +22,7 @@ public class SituationExercice implements Serializable {
     private String roleCode;
 
     @JsonProperty("structures")
-    private List<StructureRef> structures = new ArrayList<>();
+    private final List<StructureRef> structures = new ArrayList<>();
 
     public SituationExercice() {}
 
@@ -54,12 +54,16 @@ public class SituationExercice implements Serializable {
         if (this == o) return true;
         if (!(o instanceof SituationExercice)) return false;
         SituationExercice that = (SituationExercice) o;
-        return Objects.equals(modeCode, that.modeCode) && Objects.equals(activitySectorCode, that.activitySectorCode) && Objects.equals(pharmacistTableSectionCode, that.pharmacistTableSectionCode) && Objects.equals(roleCode, that.roleCode) && Objects.equals(structures, that.structures);
+        return Objects.equals(modeCode, that.modeCode) && Objects.equals(activitySectorCode, that.activitySectorCode) &&
+                Objects.equals(pharmacistTableSectionCode, that.pharmacistTableSectionCode) && Objects.equals(roleCode, that.roleCode) &&
+                Objects.equals(structures.stream().map(s -> Objects.hash(s.getStructureId())).reduce(0, Integer::sum),
+                        that.structures.stream().map(s -> Objects.hash(s.getStructureId())).reduce(0, Integer::sum));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(modeCode, activitySectorCode, pharmacistTableSectionCode, roleCode, structures);
+        return Objects.hash(modeCode, activitySectorCode, pharmacistTableSectionCode, roleCode,
+                getStructures().stream().map(s -> Objects.hash(s.getStructureId())).reduce(0, Integer::sum));
     }
 
     @Override

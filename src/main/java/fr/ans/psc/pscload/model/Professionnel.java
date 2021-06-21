@@ -50,7 +50,7 @@ public class Professionnel implements Serializable {
     private String salutationCode;
 
     @JsonProperty("professions")
-    private List<ExerciceProfessionnel> professions = new ArrayList<>();
+    private final List<ExerciceProfessionnel> professions = new ArrayList<>();
 
     public Professionnel() {}
 
@@ -110,11 +110,20 @@ public class Professionnel implements Serializable {
         if (this == o) return true;
         if (!(o instanceof Professionnel)) return false;
         Professionnel that = (Professionnel) o;
-        return Objects.equals(idType, that.idType) && Objects.equals(id, that.id) && Objects.equals(getNationalId(), that.getNationalId()) && Objects.equals(lastName, that.lastName) && Objects.equals(firstName, that.firstName) && Objects.equals(dateOfBirth, that.dateOfBirth) && Objects.equals(birthAddressCode, that.birthAddressCode) && Objects.equals(birthCountryCode, that.birthCountryCode) && Objects.equals(birthAddress, that.birthAddress) && Objects.equals(genderCode, that.genderCode) && Objects.equals(phone, that.phone) && Objects.equals(email, that.email) && Objects.equals(salutationCode, that.salutationCode) && Objects.equals(getProfessions(), that.getProfessions());
+        return Objects.equals(idType, that.idType) && Objects.equals(id, that.id) &&
+                Objects.equals(getNationalId(), that.getNationalId()) && Objects.equals(lastName, that.lastName) &&
+                Objects.equals(firstName, that.firstName) && Objects.equals(dateOfBirth, that.dateOfBirth) &&
+                Objects.equals(birthAddressCode, that.birthAddressCode) && Objects.equals(birthCountryCode, that.birthCountryCode) &&
+                Objects.equals(birthAddress, that.birthAddress) && Objects.equals(genderCode, that.genderCode) &&
+                Objects.equals(phone, that.phone) && Objects.equals(email, that.email) && Objects.equals(salutationCode, that.salutationCode) &&
+                Objects.equals(getProfessions().stream().map(ExerciceProfessionnel::hashCode).reduce(0, Integer::sum),
+                        that.getProfessions().stream().map(ExerciceProfessionnel::hashCode).reduce(0, Integer::sum));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(idType, id, getNationalId(), lastName, firstName, dateOfBirth, birthAddressCode, birthCountryCode, birthAddress, genderCode, phone, email, salutationCode, getProfessions());
+        return Objects.hash(idType, id, getNationalId(), lastName, firstName, dateOfBirth, birthAddressCode,
+                birthCountryCode, birthAddress, genderCode, phone, email, salutationCode,
+                getProfessions().stream().map(ExerciceProfessionnel::hashCode).reduce(0, Integer::sum));
     }
 }
