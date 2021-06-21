@@ -233,11 +233,11 @@ public class PscRestApi {
                 .uniqueIndex(left.getProfessions(), ExerciceProfessionnel::getProfessionId);
         Map<String, ExerciceProfessionnel> rightExPro = Maps
                 .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getProfessionId);
-        MapDifference<String, ExerciceProfessionnel> diff = Maps.difference(leftExPro, rightExPro);
+        MapDifference<String, ExerciceProfessionnel> exProDiff = Maps.difference(leftExPro, rightExPro);
 
-        diff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExProUrl(psUrl, v.getProfessionId())));
-        diff.entriesOnlyOnRight().forEach((k, v) -> post(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)));
-        diff.entriesDiffering().forEach((k, v) -> diffUpdateExPro(v.leftValue(), v.rightValue(), psUrl));
+        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExProUrl(psUrl, v.getProfessionId())));
+        exProDiff.entriesOnlyOnRight().forEach((k, v) -> post(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)));
+        exProDiff.entriesDiffering().forEach((k, v) -> diffUpdateExPro(v.leftValue(), v.rightValue(), psUrl));
     }
 
     private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String psUrl) {

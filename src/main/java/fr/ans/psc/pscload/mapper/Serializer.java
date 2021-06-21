@@ -24,6 +24,19 @@ public class Serializer {
      */
     private static final Logger log = LoggerFactory.getLogger(Serializer.class);
 
+    private static final Kryo kryo = new Kryo();
+
+    static {
+        kryo.register(HashMap.class, 9);
+        kryo.register(ArrayList.class, 10);
+        kryo.register(Professionnel.class, 11);
+        kryo.register(ExerciceProfessionnel.class, 12);
+        kryo.register(SavoirFaire.class, 13);
+        kryo.register(SituationExercice.class, 14);
+        kryo.register(StructureRef.class, 15);
+        kryo.register(Structure.class, 16);
+    }
+
     private Map<String, Professionnel> psMap = new HashMap<>();
 
     private Map<String, Structure> structureMap = new HashMap<>();
@@ -38,15 +51,6 @@ public class Serializer {
 
     public void serialiseMapsToFile(Map<String, Professionnel> psMap, Map<String, Structure> structureMap, String fileName) throws FileNotFoundException {
         log.info("serializing Ps map to {}", fileName);
-        Kryo kryo = new Kryo();
-        kryo.register(HashMap.class, 9);
-        kryo.register(ArrayList.class, 10);
-        kryo.register(Professionnel.class, 11);
-        kryo.register(ExerciceProfessionnel.class, 12);
-        kryo.register(SavoirFaire.class, 13);
-        kryo.register(SituationExercice.class, 14);
-        kryo.register(StructureRef.class, 15);
-        kryo.register(Structure.class, 16);
 
         Output output = new Output(new FileOutputStream(fileName));
         kryo.writeClassAndObject(output, psMap);
@@ -57,15 +61,6 @@ public class Serializer {
 
     public void deserialiseFileToMaps(File file) throws FileNotFoundException {
         log.info("deserializing {} to Ps map", file.getName());
-        Kryo kryo = new Kryo();
-        kryo.register(HashMap.class, 9);
-        kryo.register(ArrayList.class, 10);
-        kryo.register(Professionnel.class, 11);
-        kryo.register(ExerciceProfessionnel.class, 12);
-        kryo.register(SavoirFaire.class, 13);
-        kryo.register(SituationExercice.class, 14);
-        kryo.register(StructureRef.class, 15);
-        kryo.register(Structure.class, 16);
 
         Input input = new Input(new FileInputStream(file));
         psMap = (Map<String, Professionnel>) kryo.readClassAndObject(input);

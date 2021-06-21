@@ -25,6 +25,8 @@ public class Loader {
      */
     private static final Logger log = LoggerFactory.getLogger(Loader.class);
 
+    private static final int ROW_LENGTH = 50;
+
     private final Map<String, Professionnel> psMap = new HashMap<>();
 
     private final Map<String, Structure> structureMap = new HashMap<>();
@@ -37,7 +39,10 @@ public class Loader {
         ObjectRowProcessor rowProcessor = new ObjectRowProcessor() {
             @Override
             public void rowProcessed(Object[] objects, ParsingContext parsingContext) {
-                String[] items = Arrays.asList(objects).toArray(new String[objects.length]);
+                if (objects.length != ROW_LENGTH) {
+                    throw new IllegalArgumentException();
+                }
+                String[] items = Arrays.asList(objects).toArray(new String[ROW_LENGTH]);
                 Professionnel psRow = new Professionnel(items);
                 Professionnel mappedPs = psMap.get(psRow.getNationalId());
                 if (mappedPs != null) {

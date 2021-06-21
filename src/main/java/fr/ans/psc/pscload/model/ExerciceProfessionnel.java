@@ -23,10 +23,10 @@ public class ExerciceProfessionnel implements Serializable {
     private String firstName;
 
     @JsonProperty("expertises")
-    private List<SavoirFaire> expertises = new ArrayList<>();
+    private final List<SavoirFaire> expertises = new ArrayList<>();
 
     @JsonProperty("workSituations")
-    private List<SituationExercice> workSituations = new ArrayList<>();
+    private final List<SituationExercice> workSituations = new ArrayList<>();
 
     public ExerciceProfessionnel() {}
 
@@ -74,17 +74,24 @@ public class ExerciceProfessionnel implements Serializable {
         if (this == o) return true;
         if (!(o instanceof ExerciceProfessionnel)) return false;
         ExerciceProfessionnel that = (ExerciceProfessionnel) o;
-        return Objects.equals(code, that.code) && Objects.equals(categoryCode, that.categoryCode) && Objects.equals(salutationCode, that.salutationCode) && Objects.equals(lastName, that.lastName) && Objects.equals(firstName, that.firstName) && Objects.equals(getExpertises(), that.getExpertises()) && Objects.equals(getWorkSituations(), that.getWorkSituations());
+        return Objects.equals(code, that.code) && Objects.equals(categoryCode, that.categoryCode) &&
+                Objects.equals(salutationCode, that.salutationCode) && Objects.equals(lastName, that.lastName) &&
+                Objects.equals(firstName, that.firstName) &&
+                Objects.equals(getExpertises().stream().map(SavoirFaire::hashCode).reduce(0, Integer::sum),
+                        that.getExpertises().stream().map(SavoirFaire::hashCode).reduce(0, Integer::sum)) &&
+                Objects.equals(getWorkSituations().stream().map(SituationExercice::hashCode).reduce(0, Integer::sum),
+                        that.getWorkSituations().stream().map(SituationExercice::hashCode).reduce(0, Integer::sum));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(code, categoryCode, salutationCode, lastName, firstName, getExpertises(), getWorkSituations());
+        return Objects.hash(code, categoryCode, salutationCode, lastName, firstName,
+                getExpertises().stream().map(SavoirFaire::hashCode).reduce(0, Integer::sum),
+                getWorkSituations().stream().map(SituationExercice::hashCode).reduce(0, Integer::sum));
     }
 
     @Override
     public String toString() {
-        return code + '|' + categoryCode + '|' + salutationCode + '|' + lastName + '|' + firstName + '|' +
-                expertises + '|' + workSituations;
+        return code + '|' + categoryCode + '|' + salutationCode + '|' + lastName + '|' + firstName;
     }
 }
