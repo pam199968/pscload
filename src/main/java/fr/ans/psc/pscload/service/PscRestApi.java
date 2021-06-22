@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * The type Psc rest api.
@@ -41,9 +40,6 @@ public class PscRestApi {
 
     @Value("${api.base.url}")
     private String apiBaseUrl;
-
-    @Value("${custom.thread.count}")
-    private int numOfThreads;
 
     /**
      * Instantiates a new Psc rest api.
