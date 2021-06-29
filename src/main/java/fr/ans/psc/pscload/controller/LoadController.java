@@ -7,10 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,14 +47,14 @@ class LoadController {
         return "health check OK";
     }
 
-    @GetMapping(value = "/clean-all", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/clean-all", produces = MediaType.APPLICATION_JSON_VALUE)
     public String cleanAll() throws IOException {
         FileUtils.cleanDirectory(new File(filesDirectory));
         log.info("all files in {} were deleted!", filesDirectory);
         return "all files in storage were deleted";
     }
 
-    @GetMapping(value = "/clean", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/clean", produces = MediaType.APPLICATION_JSON_VALUE)
     public String clean() throws IOException {
         String[] fileList = Stream.of(Objects.requireNonNull(new File(filesDirectory).listFiles()))
                 .map(File::getAbsolutePath).distinct().toArray(String[]::new);
@@ -72,7 +69,7 @@ class LoadController {
         return "cleanup complete";
     }
 
-    @GetMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)
     public String load() throws IOException, GeneralSecurityException {
         log.info("loading from {}", extractDownloadUrl);
         parser.downloadAndParse(extractDownloadUrl);
@@ -80,7 +77,7 @@ class LoadController {
         return "loading complete";
     }
 
-    @GetMapping(value = "/load-test", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/load-test", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public String loadTest(@RequestParam String fileName) throws GeneralSecurityException, IOException {
         String downloadUrl = testDownloadUrl + fileName + ".zip";
@@ -98,7 +95,7 @@ class LoadController {
                 .collect(Collectors.toSet()).toString();
     }
 
-    @GetMapping(value = "/run", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/run", produces = MediaType.APPLICATION_JSON_VALUE)
     public String run() throws IOException {
         log.info("running");
         parser.diffOrLoad();
