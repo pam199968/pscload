@@ -5,6 +5,7 @@ import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import fr.ans.psc.pscload.model.*;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class Loader {
@@ -30,6 +32,16 @@ public class Loader {
     private final Map<String, Professionnel> psMap = new HashMap<>();
 
     private final Map<String, Structure> structureMap = new HashMap<>();
+
+    private final AtomicInteger psMapSizeGauge;
+
+    private final AtomicInteger structureMapSizeGauge;
+
+    public Loader(MeterRegistry meterRegistry) {
+        // prometheus gauge
+        psMapSizeGauge = meterRegistry.gauge("ps_map_size", new AtomicInteger(0));
+        structureMapSizeGauge = meterRegistry.gauge("structure_map_size", new AtomicInteger(0));
+    }
 
     public void loadFileToMap(File file) throws FileNotFoundException {
         log.info("loading {} into list of Ps", file.getName());
@@ -68,6 +80,8 @@ public class Loader {
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new BufferedReader(new FileReader(file)));
         log.info("loading complete!");
+        psMapSizeGauge.set(psMap.size());
+        structureMapSizeGauge.set(structureMap.size());
     }
 
     public Map<String, Professionnel> getPsMap() {

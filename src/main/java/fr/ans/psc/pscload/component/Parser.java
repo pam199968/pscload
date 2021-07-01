@@ -23,13 +23,13 @@ import java.util.Map;
 public class Parser {
 
     @Autowired
-    private final PscRestApi pscRestApi;
+    private PscRestApi pscRestApi;
 
     @Autowired
-    private final Serializer serializer;
+    private Serializer serializer;
 
     @Autowired
-    private final Loader loader;
+    private Loader loader;
 
     @Value("${cert.path}")
     private String cert;
@@ -45,18 +45,6 @@ public class Parser {
 
     @Value("${use.ssl}")
     private boolean useSSL;
-
-    /**
-     * Instantiates a new Loader.
-     *  @param pscRestApi the psc rest api
-     * @param serializer serializer
-     * @param loader loader
-     */
-    public Parser(PscRestApi pscRestApi, Serializer serializer, Loader loader) {
-        this.pscRestApi = pscRestApi;
-        this.serializer = serializer;
-        this.loader = loader;
-    }
 
     /**
      * Download and parse.

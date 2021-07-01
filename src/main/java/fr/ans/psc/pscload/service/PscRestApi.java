@@ -6,6 +6,7 @@ import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.model.*;
 import fr.ans.psc.pscload.model.response.PsListResponse;
 import fr.ans.psc.pscload.model.response.PsResponse;
+import io.micrometer.core.instrument.MeterRegistry;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The type Psc rest api.
@@ -35,33 +37,42 @@ public class PscRestApi {
 
     private final OkHttpClient client;
 
+    private final AtomicInteger psLoadCounter;
+
+    private final AtomicInteger structureLoadCounter;
+
+    private final AtomicInteger psDiffDelete;
+
+    private final AtomicInteger psDiffCreate;
+
+    private final AtomicInteger psDiffEdit;
+
+    private final AtomicInteger structureDiffDelete;
+
+    private final AtomicInteger structureDiffCreate;
+
+    private final AtomicInteger structureDiffEdit;
+
     @Autowired
-    private final JsonFormatter jsonFormatter;
+    private JsonFormatter jsonFormatter;
 
     @Value("${api.base.url}")
     private String apiBaseUrl;
 
     /**
      * Instantiates a new Psc rest api.
-     *
-     * @param client         the client
-     * @param requestBuilder the request builder
-     * @param jsonFormatter  json formatter
      */
-    public PscRestApi(OkHttpClient client, Request.Builder requestBuilder, JsonFormatter jsonFormatter) {
-        // set connection and read timeouts
-        this.client = client;
-        this.requestBuilder = requestBuilder;
-        this.jsonFormatter = jsonFormatter;
-    }
-
-    /**
-     * Instantiates a new Psc rest api.
-     */
-    public PscRestApi() {
+    public PscRestApi(MeterRegistry meterRegistry) {
         this.client = new OkHttpClient();
         this.requestBuilder = new Request.Builder();
-        this.jsonFormatter = new JsonFormatter();
+        psLoadCounter = meterRegistry.gauge("ps_load_counter", new AtomicInteger(0));
+        structureLoadCounter = meterRegistry.gauge("structure_load_counter", new AtomicInteger(0));
+        psDiffDelete = meterRegistry.gauge("ps_diff_delete", new AtomicInteger(0));
+        psDiffCreate = meterRegistry.gauge("ps_diff_create", new AtomicInteger(0));
+        psDiffEdit = meterRegistry.gauge("ps_diff_edit", new AtomicInteger(0));
+        structureDiffDelete = meterRegistry.gauge("structure_diff_delete", new AtomicInteger(0));
+        structureDiffCreate = meterRegistry.gauge("structure_diff_create", new AtomicInteger(0));
+        structureDiffEdit = meterRegistry.gauge("structure_diff_edit", new AtomicInteger(0));
     }
 
     /**
@@ -170,7 +181,11 @@ public class PscRestApi {
      */
     public void uploadPsMap(Map<String, Professionnel> psMap) {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
-        psSet.parallelStream().forEach(ps -> put(getPsUrl(), jsonFormatter.jsonFromObject(ps)));
+        psSet.parallelStream().forEach(ps -> {
+            put(getPsUrl(), jsonFormatter.jsonFromObject(ps));
+            psLoadCounter.incrementAndGet();
+        });
+        psLoadCounter.set(0);
     }
 
     /**
@@ -180,7 +195,11 @@ public class PscRestApi {
      */
     public void uploadStructureMap(Map<String, Structure> structureMap) {
         HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
-        structureSet.parallelStream().forEach(structure -> put(getStructureUrl(), jsonFormatter.jsonFromObject(structure)));
+        structureSet.parallelStream().forEach(structure -> {
+            put(getStructureUrl(), jsonFormatter.jsonFromObject(structure));
+            structureLoadCounter.incrementAndGet();
+        });
+        structureLoadCounter.set(0);
     }
 
     /**
@@ -191,6 +210,9 @@ public class PscRestApi {
      */
     public void diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
         MapDifference<String, Structure> diff = Maps.difference(original, revised);
+        structureDiffDelete.set(diff.entriesOnlyOnLeft().size());
+        structureDiffCreate.set(diff.entriesOnlyOnRight().size());
+        structureDiffEdit.set(diff.entriesDiffering().size());
         diff.entriesOnlyOnLeft().forEach((k, v) ->
                 delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8)));
         diff.entriesOnlyOnRight().forEach((k, v) -> post(getStructureUrl(), jsonFormatter.jsonFromObject(v)));
@@ -205,6 +227,9 @@ public class PscRestApi {
      */
     public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
         MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
+        psDiffDelete.set(diff.entriesOnlyOnLeft().size());
+        psDiffCreate.set(diff.entriesOnlyOnRight().size());
+        psDiffEdit.set(diff.entriesDiffering().size());
         diff.entriesOnlyOnLeft().forEach((k, v) -> delete(getPsUrl(v.getNationalId())));
         diff.entriesOnlyOnRight().forEach((k, v) -> post(getPsUrl(), jsonFormatter.jsonFromObject(v)));
         diff.entriesDiffering().forEach((k, v) -> diffUpdatePs(v.leftValue(), v.rightValue()));
