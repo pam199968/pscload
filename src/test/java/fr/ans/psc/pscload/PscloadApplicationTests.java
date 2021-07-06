@@ -31,6 +31,9 @@ class PscloadApplicationTests {
 	@Autowired
 	Serializer serializer;
 
+	@Autowired
+	PscRestApi pscRestApi;
+
 	@Test
 	@Disabled
 	void downloadTest() throws GeneralSecurityException, IOException {
@@ -45,7 +48,6 @@ class PscloadApplicationTests {
 		String url = "http://localhost:8000/api/ps";
 		//String message = "0|496112012|0496112012|CHOLOT|Florence'Renée'Georgette|20/05/1964|||||||MME|60|C||MESFIOUI RAJA|Florence|||S|||||||||||||||||||||||||||||";
 		String message = "3|190000042/021721|3190000042/021721|PROS|JEAN LOUIS''||||||0555926000||M||||PROS|JEAN LOUIS|||S||||||||F190000042||||||||||||||0555926000||0555926080|||||";
-		PscRestApi pscRestApi = new PscRestApi();
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		String jsonPs = jsonFormatter.nakedPsFromMessage(message);
@@ -56,7 +58,6 @@ class PscloadApplicationTests {
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		PscRestApi pscRestApi = new PscRestApi();
 		pscRestApi.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
@@ -70,14 +71,12 @@ class PscloadApplicationTests {
 
 		File file = new File("src/test/resources/download/Extraction_PSC_20001.txt");
 
-		Loader loader = new Loader();
 		loader.loadFileToMap(file);
 
 		Map<String, Professionnel> original = loader.getPsMap();
 
 		System.out.println(System.currentTimeMillis()-startTime);
 
-		PscRestApi pscRestApi = new PscRestApi();
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
@@ -94,20 +93,19 @@ class PscloadApplicationTests {
 		long startTime = System.currentTimeMillis();
 
 		File ogFile = new File("src/test/resources/download/Extraction_PSC_20001.txt");
-		Loader l1 = new Loader();
-		l1.loadFileToMap(ogFile);
-		Map<String, Professionnel> original = l1.getPsMap();
+
+		loader.loadFileToMap(ogFile);
+		Map<String, Professionnel> original = loader.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
-		Loader l2 = new Loader();
-		l2.loadFileToMap(newFile);
-		Map<String, Professionnel> revised = l2.getPsMap();
+
+		loader.loadFileToMap(newFile);
+		Map<String, Professionnel> revised = loader.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
 
-		PscRestApi pscRestApi = new PscRestApi();
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
@@ -128,7 +126,6 @@ class PscloadApplicationTests {
 		File extFile = new File("src/test/resources/Extraction_PSC.txt");
 
 		//build simple lists of the lines of the two testfiles
-		Loader loader = new Loader();
 		loader.loadFileToMap(extFile);
 		Map<String, Professionnel> originalPs = loader.getPsMap();
 		Map<String, Structure> originalStructure = loader.getStructureMap();
