@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,6 +68,15 @@ class LoadController {
         }
         log.info("cleanup complete!");
         return "cleanup complete";
+    }
+
+    @PostMapping(value = "/deleteFile",
+            consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String deleteFile(@RequestBody Map<String, Object> payload) throws IOException {
+        String fileName = (String) payload.get("fileName");
+        FileUtils.forceDelete(new File(filesDirectory, fileName));
+        log.info("deleted {}", fileName);
+        return "deleted " + fileName;
     }
 
     @PostMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)

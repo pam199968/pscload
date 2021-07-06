@@ -42,16 +42,22 @@ public class PscRestApi {
     private final AtomicInteger structureLoadCounter;
 
     private final AtomicInteger psDiffDelete;
+    private final AtomicInteger psDiffDeleteCount;
 
     private final AtomicInteger psDiffCreate;
+    private final AtomicInteger psDiffCreateCount;
 
     private final AtomicInteger psDiffEdit;
+    private final AtomicInteger psDiffEditCount;
 
     private final AtomicInteger structureDiffDelete;
+    private final AtomicInteger structureDiffDeleteCount;
 
     private final AtomicInteger structureDiffCreate;
+    private final AtomicInteger structureDiffCreateCount;
 
     private final AtomicInteger structureDiffEdit;
+    private final AtomicInteger structureDiffEditCount;
 
     @Autowired
     private JsonFormatter jsonFormatter;
@@ -63,16 +69,22 @@ public class PscRestApi {
      * Instantiates a new Psc rest api.
      */
     public PscRestApi(MeterRegistry meterRegistry) {
-        this.client = new OkHttpClient();
+                this.client = new OkHttpClient();
         this.requestBuilder = new Request.Builder();
         psLoadCounter = meterRegistry.gauge("ps_load_counter", new AtomicInteger(0));
         structureLoadCounter = meterRegistry.gauge("structure_load_counter", new AtomicInteger(0));
         psDiffDelete = meterRegistry.gauge("ps_diff_delete", new AtomicInteger(0));
+        psDiffDeleteCount = meterRegistry.gauge("ps_diff_delete_Count", new AtomicInteger(0));
         psDiffCreate = meterRegistry.gauge("ps_diff_create", new AtomicInteger(0));
+        psDiffCreateCount = meterRegistry.gauge("ps_diff_create_count", new AtomicInteger(0));
         psDiffEdit = meterRegistry.gauge("ps_diff_edit", new AtomicInteger(0));
+        psDiffEditCount = meterRegistry.gauge("ps_diff_edit_count", new AtomicInteger(0));
         structureDiffDelete = meterRegistry.gauge("structure_diff_delete", new AtomicInteger(0));
+        structureDiffDeleteCount = meterRegistry.gauge("structure_diff_delete_count", new AtomicInteger(0));
         structureDiffCreate = meterRegistry.gauge("structure_diff_create", new AtomicInteger(0));
+        structureDiffCreateCount = meterRegistry.gauge("structure_diff_create_count", new AtomicInteger(0));
         structureDiffEdit = meterRegistry.gauge("structure_diff_edit", new AtomicInteger(0));
+        structureDiffEditCount = meterRegistry.gauge("structure_diff_edit_count", new AtomicInteger(0));
     }
 
     /**
@@ -210,13 +222,33 @@ public class PscRestApi {
      */
     public void diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
         MapDifference<String, Structure> diff = Maps.difference(original, revised);
+
         structureDiffDelete.set(diff.entriesOnlyOnLeft().size());
         structureDiffCreate.set(diff.entriesOnlyOnRight().size());
         structureDiffEdit.set(diff.entriesDiffering().size());
-        diff.entriesOnlyOnLeft().forEach((k, v) ->
-                delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8)));
-        diff.entriesOnlyOnRight().forEach((k, v) -> post(getStructureUrl(), jsonFormatter.jsonFromObject(v)));
-        diff.entriesDiffering().forEach((k, v) -> put(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())));
+
+        HashSet<Structure> entriesOnlyOnLeft =
+                new HashSet<>(diff.entriesOnlyOnLeft().values());
+        HashSet<Structure> entriesOnlyOnRight =
+                new HashSet<>(diff.entriesOnlyOnRight().values());
+        HashSet<MapDifference.ValueDifference<Structure>> entriesDiffering =
+                new HashSet<>(diff.entriesDiffering().values());
+
+        entriesOnlyOnLeft.parallelStream().forEach(v -> {
+            structureDiffDeleteCount.incrementAndGet();
+            delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8));
+        });
+        entriesOnlyOnRight.parallelStream().forEach(v -> {
+            structureDiffCreateCount.incrementAndGet();
+            post(getStructureUrl(), jsonFormatter.jsonFromObject(v));
+        });
+        entriesDiffering.parallelStream().forEach(v -> {
+            structureDiffEditCount.incrementAndGet();
+            put(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()));
+        });
+        structureDiffDeleteCount.set(0);
+        structureDiffCreateCount.set(0);
+        structureDiffEditCount.set(0);
     }
 
     /**
@@ -227,12 +259,33 @@ public class PscRestApi {
      */
     public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
         MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
+
         psDiffDelete.set(diff.entriesOnlyOnLeft().size());
         psDiffCreate.set(diff.entriesOnlyOnRight().size());
         psDiffEdit.set(diff.entriesDiffering().size());
-        diff.entriesOnlyOnLeft().forEach((k, v) -> delete(getPsUrl(v.getNationalId())));
-        diff.entriesOnlyOnRight().forEach((k, v) -> post(getPsUrl(), jsonFormatter.jsonFromObject(v)));
-        diff.entriesDiffering().forEach((k, v) -> diffUpdatePs(v.leftValue(), v.rightValue()));
+
+        HashSet<Professionnel> entriesOnlyOnLeft =
+                new HashSet<>(diff.entriesOnlyOnLeft().values());
+        HashSet<Professionnel> entriesOnlyOnRight =
+                new HashSet<>(diff.entriesOnlyOnRight().values());
+        HashSet<MapDifference.ValueDifference<Professionnel>> entriesDiffering =
+                new HashSet<>(diff.entriesDiffering().values());
+
+        entriesOnlyOnLeft.parallelStream().forEach(v -> {
+            psDiffDeleteCount.incrementAndGet();
+            delete(getPsUrl(v.getNationalId()));
+        });
+        entriesOnlyOnRight.parallelStream().forEach(v -> {
+            psDiffCreateCount.incrementAndGet();
+            post(getPsUrl(), jsonFormatter.jsonFromObject(v));
+        });
+        entriesDiffering.parallelStream().forEach(v -> {
+            psDiffEditCount.incrementAndGet();
+            diffUpdatePs(v.leftValue(), v.rightValue());
+        });
+        psDiffDeleteCount.set(0);
+        psDiffCreateCount.set(0);
+        psDiffEditCount.set(0);
     }
 
     /**

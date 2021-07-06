@@ -76,6 +76,10 @@ public class Parser {
         Map<String, Professionnel> newPsMap = loader.getPsMap();
         Map<String, Structure> newStructureMap = loader.getStructureMap();
 
+        // serialise latest extract
+        serializer.serialiseMapsToFile(newPsMap, newStructureMap,
+                filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
+
         if (ogFile == null) {
             // first load
             pscRestApi.uploadPsMap(newPsMap);
@@ -86,9 +90,6 @@ public class Parser {
             pscRestApi.diffPsMaps(serializer.getPsMap(), newPsMap);
             pscRestApi.diffStructureMaps(serializer.getStructureMap(), newStructureMap);
         }
-        // serialise latest extract
-        serializer.serialiseMapsToFile(newPsMap, newStructureMap,
-                filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
     }
 
 }

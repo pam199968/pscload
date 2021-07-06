@@ -55,7 +55,9 @@ public class Serializer {
         Output output = new Output(new FileOutputStream(fileName));
         kryo.writeClassAndObject(output, psMap);
         kryo.writeClassAndObject(output, structureMap);
+        output.flush();
         output.close();
+
         log.info("serialization complete!");
     }
 
