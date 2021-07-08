@@ -71,21 +71,21 @@ public class Parser {
         File ogFile = latestFiles.get("ser");
         File newFile = latestFiles.get("txt");
 
-        loader.loadFileToMap(newFile);
+        loader.loadMapFromFile(newFile);
 
         Map<String, Professionnel> newPsMap = loader.getPsMap();
         Map<String, Structure> newStructureMap = loader.getStructureMap();
 
-        // serialise latest extract
+        // serialise latest extract. This step should be done right here otherwise deserializing this file will fail
         serializer.serialiseMapsToFile(newPsMap, newStructureMap,
                 filesDirectory + "/" + newFile.getName().replace(".txt", ".ser"));
 
         if (ogFile == null) {
-            // first load
+            // if ser file not found, load map as if for the first time
             pscRestApi.uploadPsMap(newPsMap);
             pscRestApi.uploadStructureMap(newStructureMap);
         } else {
-            // perform diff
+            // if ser file exists, deserialize it into map and perform diff
             serializer.deserialiseFileToMaps(ogFile);
             pscRestApi.diffPsMaps(serializer.getPsMap(), newPsMap);
             pscRestApi.diffStructureMaps(serializer.getStructureMap(), newStructureMap);

@@ -15,17 +15,13 @@ import java.security.GeneralSecurityException;
 public class Scheduler {
 
     @Autowired
-    private final Parser parser;
+    private Parser parser;
 
     @Value("${enable.scheduler:true}")
     private boolean enabled;
 
     @Value("${extract.download.url}")
     private String extractDownloadUrl;
-
-    public Scheduler(Parser parser) {
-        this.parser = parser;
-    }
 
     /**
      * Download and parse.

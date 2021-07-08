@@ -4,10 +4,12 @@ import com.univocity.parsers.common.ParsingContext;
 import com.univocity.parsers.common.processor.ObjectRowProcessor;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -33,17 +35,23 @@ public class Loader {
 
     private final Map<String, Structure> structureMap = new HashMap<>();
 
-    private final AtomicInteger psMapSizeGauge;
+    //private final AtomicInteger psMapSize;
 
-    private final AtomicInteger structureMapSizeGauge;
+    @Autowired
+    private CustomMetrics customMetrics;
+
+    private final AtomicInteger structureMapSize;
+
+    private final AtomicInteger pscloadStage;
 
     public Loader(MeterRegistry meterRegistry) {
-        // prometheus gauge
-        psMapSizeGauge = meterRegistry.gauge("ps_map_size", new AtomicInteger(0));
-        structureMapSizeGauge = meterRegistry.gauge("structure_map_size", new AtomicInteger(0));
+        // prometheus gauges
+        //psMapSize = meterRegistry.gauge("ps_map_size", new AtomicInteger(0));
+        structureMapSize = meterRegistry.gauge("structure_map_size", new AtomicInteger(0));
+        pscloadStage = meterRegistry.gauge("pscload_stage", new AtomicInteger(0));
     }
 
-    public void loadFileToMap(File file) throws FileNotFoundException {
+    public void loadMapFromFile(File file) throws FileNotFoundException {
         log.info("loading {} into list of Ps", file.getName());
         psMap.clear();
         structureMap.clear();
@@ -80,8 +88,11 @@ public class Loader {
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new BufferedReader(new FileReader(file)));
         log.info("loading complete!");
-        psMapSizeGauge.set(psMap.size());
-        structureMapSizeGauge.set(structureMap.size());
+
+        //psMapSize.set(psMap.size());
+        customMetrics.getAppGauges().get("ps_map_size").set(psMap.size());
+        structureMapSize.set(structureMap.size());
+        pscloadStage.set(1);  // stage 1 : loading file into map done
     }
 
     public Map<String, Professionnel> getPsMap() {

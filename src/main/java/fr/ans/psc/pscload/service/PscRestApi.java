@@ -74,7 +74,7 @@ public class PscRestApi {
         psLoadCounter = meterRegistry.gauge("ps_load_counter", new AtomicInteger(0));
         structureLoadCounter = meterRegistry.gauge("structure_load_counter", new AtomicInteger(0));
         psDiffDelete = meterRegistry.gauge("ps_diff_delete", new AtomicInteger(0));
-        psDiffDeleteCount = meterRegistry.gauge("ps_diff_delete_Count", new AtomicInteger(0));
+        psDiffDeleteCount = meterRegistry.gauge("ps_diff_delete_count", new AtomicInteger(0));
         psDiffCreate = meterRegistry.gauge("ps_diff_create", new AtomicInteger(0));
         psDiffCreateCount = meterRegistry.gauge("ps_diff_create_count", new AtomicInteger(0));
         psDiffEdit = meterRegistry.gauge("ps_diff_edit", new AtomicInteger(0));

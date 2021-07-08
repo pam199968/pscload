@@ -55,7 +55,7 @@ class LoadController {
         return "all files in storage were deleted";
     }
 
-    @PostMapping(value = "/clean", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/clean", produces = MediaType.TEXT_PLAIN_VALUE)
     public String clean() throws IOException {
         String[] fileList = Stream.of(Objects.requireNonNull(new File(filesDirectory).listFiles()))
                 .map(File::getAbsolutePath).distinct().toArray(String[]::new);
@@ -71,7 +71,7 @@ class LoadController {
     }
 
     @PostMapping(value = "/deleteFile",
-            consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+            consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE)
     public String deleteFile(@RequestBody Map<String, Object> payload) throws IOException {
         String fileName = (String) payload.get("fileName");
         FileUtils.forceDelete(new File(filesDirectory, fileName));
@@ -79,7 +79,7 @@ class LoadController {
         return "deleted " + fileName;
     }
 
-    @PostMapping(value = "/load", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/load", produces = MediaType.TEXT_PLAIN_VALUE)
     public String load() throws IOException, GeneralSecurityException {
         log.info("loading from {}", extractDownloadUrl);
         parser.downloadAndParse(extractDownloadUrl);
@@ -87,7 +87,7 @@ class LoadController {
         return "loading complete";
     }
 
-    @PostMapping(value = "/load-test", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/load-test", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public String loadTest(@RequestParam String fileName) throws GeneralSecurityException, IOException {
         String downloadUrl = testDownloadUrl + fileName + ".zip";
@@ -96,7 +96,7 @@ class LoadController {
         return "loading complete";
     }
 
-    @GetMapping(value = "/files", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/files", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public String listFiles() {
         return Stream.of(Objects.requireNonNull(new File(filesDirectory).listFiles()))
@@ -105,7 +105,7 @@ class LoadController {
                 .collect(Collectors.toSet()).toString();
     }
 
-    @PostMapping(value = "/run", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/run", produces = MediaType.TEXT_PLAIN_VALUE)
     public String run() throws IOException {
         log.info("running");
         parser.diffOrLoad();

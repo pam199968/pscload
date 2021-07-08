@@ -76,7 +76,7 @@ public class SSLUtils {
     }
 
 
-    private static KeyStore keyStoreFromPEM(String certFile, String keyFile) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, KeyStoreException, CertificateException {
+    private static KeyStore keyStoreFromPEM(String certFile, String keyFile) throws IOException, GeneralSecurityException {
         String alias="psc";
 
         // Private Key
