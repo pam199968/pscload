@@ -3,10 +3,10 @@ package fr.ans.psc.pscload.service;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
+import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
 import fr.ans.psc.pscload.model.response.PsListResponse;
 import fr.ans.psc.pscload.model.response.PsResponse;
-import io.micrometer.core.instrument.MeterRegistry;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The type Psc rest api.
@@ -37,27 +36,8 @@ public class PscRestApi {
 
     private final OkHttpClient client;
 
-    private final AtomicInteger psLoadCounter;
-
-    private final AtomicInteger structureLoadCounter;
-
-    private final AtomicInteger psDiffDelete;
-    private final AtomicInteger psDiffDeleteCount;
-
-    private final AtomicInteger psDiffCreate;
-    private final AtomicInteger psDiffCreateCount;
-
-    private final AtomicInteger psDiffEdit;
-    private final AtomicInteger psDiffEditCount;
-
-    private final AtomicInteger structureDiffDelete;
-    private final AtomicInteger structureDiffDeleteCount;
-
-    private final AtomicInteger structureDiffCreate;
-    private final AtomicInteger structureDiffCreateCount;
-
-    private final AtomicInteger structureDiffEdit;
-    private final AtomicInteger structureDiffEditCount;
+    @Autowired
+    private CustomMetrics customMetrics;
 
     @Autowired
     private JsonFormatter jsonFormatter;
@@ -68,23 +48,9 @@ public class PscRestApi {
     /**
      * Instantiates a new Psc rest api.
      */
-    public PscRestApi(MeterRegistry meterRegistry) {
-                this.client = new OkHttpClient();
+    public PscRestApi() {
+        this.client = new OkHttpClient();
         this.requestBuilder = new Request.Builder();
-        psLoadCounter = meterRegistry.gauge("ps_load_counter", new AtomicInteger(0));
-        structureLoadCounter = meterRegistry.gauge("structure_load_counter", new AtomicInteger(0));
-        psDiffDelete = meterRegistry.gauge("ps_diff_delete", new AtomicInteger(0));
-        psDiffDeleteCount = meterRegistry.gauge("ps_diff_delete_count", new AtomicInteger(0));
-        psDiffCreate = meterRegistry.gauge("ps_diff_create", new AtomicInteger(0));
-        psDiffCreateCount = meterRegistry.gauge("ps_diff_create_count", new AtomicInteger(0));
-        psDiffEdit = meterRegistry.gauge("ps_diff_edit", new AtomicInteger(0));
-        psDiffEditCount = meterRegistry.gauge("ps_diff_edit_count", new AtomicInteger(0));
-        structureDiffDelete = meterRegistry.gauge("structure_diff_delete", new AtomicInteger(0));
-        structureDiffDeleteCount = meterRegistry.gauge("structure_diff_delete_count", new AtomicInteger(0));
-        structureDiffCreate = meterRegistry.gauge("structure_diff_create", new AtomicInteger(0));
-        structureDiffCreateCount = meterRegistry.gauge("structure_diff_create_count", new AtomicInteger(0));
-        structureDiffEdit = meterRegistry.gauge("structure_diff_edit", new AtomicInteger(0));
-        structureDiffEditCount = meterRegistry.gauge("structure_diff_edit_count", new AtomicInteger(0));
     }
 
     /**
@@ -195,9 +161,9 @@ public class PscRestApi {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
         psSet.parallelStream().forEach(ps -> {
             put(getPsUrl(), jsonFormatter.jsonFromObject(ps));
-            psLoadCounter.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_PROGRESSION).incrementAndGet();
         });
-        psLoadCounter.set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_PROGRESSION).set(0);
     }
 
     /**
@@ -209,9 +175,9 @@ public class PscRestApi {
         HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
         structureSet.parallelStream().forEach(structure -> {
             put(getStructureUrl(), jsonFormatter.jsonFromObject(structure));
-            structureLoadCounter.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_PROGRESSION).incrementAndGet();
         });
-        structureLoadCounter.set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_PROGRESSION).set(0);
     }
 
     /**
@@ -223,9 +189,9 @@ public class PscRestApi {
     public void diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
         MapDifference<String, Structure> diff = Maps.difference(original, revised);
 
-        structureDiffDelete.set(diff.entriesOnlyOnLeft().size());
-        structureDiffCreate.set(diff.entriesOnlyOnRight().size());
-        structureDiffEdit.set(diff.entriesDiffering().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_SIZE).set(diff.entriesOnlyOnLeft().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_SIZE).set(diff.entriesOnlyOnRight().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_SIZE).set(diff.entriesDiffering().size());
 
         HashSet<Structure> entriesOnlyOnLeft =
                 new HashSet<>(diff.entriesOnlyOnLeft().values());
@@ -235,20 +201,20 @@ public class PscRestApi {
                 new HashSet<>(diff.entriesDiffering().values());
 
         entriesOnlyOnLeft.parallelStream().forEach(v -> {
-            structureDiffDeleteCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).incrementAndGet();
             delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8));
         });
         entriesOnlyOnRight.parallelStream().forEach(v -> {
-            structureDiffCreateCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).incrementAndGet();
             post(getStructureUrl(), jsonFormatter.jsonFromObject(v));
         });
         entriesDiffering.parallelStream().forEach(v -> {
-            structureDiffEditCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_PROGRESSION).incrementAndGet();
             put(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()));
         });
-        structureDiffDeleteCount.set(0);
-        structureDiffCreateCount.set(0);
-        structureDiffEditCount.set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_PROGRESSION).set(0);
     }
 
     /**
@@ -260,9 +226,9 @@ public class PscRestApi {
     public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
         MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
 
-        psDiffDelete.set(diff.entriesOnlyOnLeft().size());
-        psDiffCreate.set(diff.entriesOnlyOnRight().size());
-        psDiffEdit.set(diff.entriesDiffering().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_SIZE).set(diff.entriesOnlyOnLeft().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_SIZE).set(diff.entriesOnlyOnRight().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_SIZE).set(diff.entriesDiffering().size());
 
         HashSet<Professionnel> entriesOnlyOnLeft =
                 new HashSet<>(diff.entriesOnlyOnLeft().values());
@@ -272,20 +238,20 @@ public class PscRestApi {
                 new HashSet<>(diff.entriesDiffering().values());
 
         entriesOnlyOnLeft.parallelStream().forEach(v -> {
-            psDiffDeleteCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).incrementAndGet();
             delete(getPsUrl(v.getNationalId()));
         });
         entriesOnlyOnRight.parallelStream().forEach(v -> {
-            psDiffCreateCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).incrementAndGet();
             post(getPsUrl(), jsonFormatter.jsonFromObject(v));
         });
         entriesDiffering.parallelStream().forEach(v -> {
-            psDiffEditCount.incrementAndGet();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_PROGRESSION).incrementAndGet();
             diffUpdatePs(v.leftValue(), v.rightValue());
         });
-        psDiffDeleteCount.set(0);
-        psDiffCreateCount.set(0);
-        psDiffEditCount.set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_PROGRESSION).set(0);
     }
 
     /**

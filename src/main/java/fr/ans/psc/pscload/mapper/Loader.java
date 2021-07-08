@@ -6,7 +6,6 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class Loader {
@@ -35,21 +33,8 @@ public class Loader {
 
     private final Map<String, Structure> structureMap = new HashMap<>();
 
-    //private final AtomicInteger psMapSize;
-
     @Autowired
     private CustomMetrics customMetrics;
-
-    private final AtomicInteger structureMapSize;
-
-    private final AtomicInteger pscloadStage;
-
-    public Loader(MeterRegistry meterRegistry) {
-        // prometheus gauges
-        //psMapSize = meterRegistry.gauge("ps_map_size", new AtomicInteger(0));
-        structureMapSize = meterRegistry.gauge("structure_map_size", new AtomicInteger(0));
-        pscloadStage = meterRegistry.gauge("pscload_stage", new AtomicInteger(0));
-    }
 
     public void loadMapFromFile(File file) throws FileNotFoundException {
         log.info("loading {} into list of Ps", file.getName());
@@ -89,10 +74,9 @@ public class Loader {
         parser.parse(new BufferedReader(new FileReader(file)));
         log.info("loading complete!");
 
-        //psMapSize.set(psMap.size());
-        customMetrics.getAppGauges().get("ps_map_size").set(psMap.size());
-        structureMapSize.set(structureMap.size());
-        pscloadStage.set(1);  // stage 1 : loading file into map done
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_SIZE).set(psMap.size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_SIZE).set(structureMap.size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(1);  // stage 1: loaded file into map
     }
 
     public Map<String, Professionnel> getPsMap() {

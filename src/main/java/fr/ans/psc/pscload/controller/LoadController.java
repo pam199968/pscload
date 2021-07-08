@@ -105,7 +105,7 @@ class LoadController {
                 .collect(Collectors.toSet()).toString();
     }
 
-    @PostMapping(value = "/run", produces = MediaType.TEXT_PLAIN_VALUE)
+    @PostMapping(value = "/run", produces = MediaType.APPLICATION_JSON_VALUE)
     public String run() throws IOException {
         log.info("running");
         parser.diffOrLoad();
