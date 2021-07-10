@@ -1,6 +1,7 @@
 package fr.ans.psc.pscload.component;
 
 import fr.ans.psc.pscload.service.PscRestApi;
+import fr.ans.psc.pscload.service.RestUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,8 @@ public class Receiver {
 
     @RabbitHandler
     public void receiveMessage(String message) {
-        pscRestApi.put(pscRestApi.getPsUrl(), jsonFormatter.psFromMessage(message));
-        pscRestApi.put(pscRestApi.getStructureUrl(), jsonFormatter.structureFromMessage(message));
+        RestUtils.put(pscRestApi.getPsUrl(), jsonFormatter.psFromMessage(message));
+        RestUtils.put(pscRestApi.getStructureUrl(), jsonFormatter.structureFromMessage(message));
         latch.countDown();
     }
 

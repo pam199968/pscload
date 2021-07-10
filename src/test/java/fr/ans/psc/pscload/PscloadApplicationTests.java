@@ -9,6 +9,7 @@ import fr.ans.psc.pscload.mapper.Serializer;
 import fr.ans.psc.pscload.model.Professionnel;
 import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
+import fr.ans.psc.pscload.service.RestUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,14 +52,14 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		String jsonPs = jsonFormatter.nakedPsFromMessage(message);
-		pscRestApi.put(url, jsonPs);
+		RestUtils.put(url, jsonPs);
 	}
 
 	@Test
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		pscRestApi.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+		RestUtils.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
@@ -80,7 +81,7 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
-			pscRestApi.post(url, jsonFormatter.jsonFromObject(ps));
+			RestUtils.post(url, jsonFormatter.jsonFromObject(ps));
 		}
 
 		System.out.println(System.currentTimeMillis()-startTime);
@@ -109,11 +110,9 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
-				pscRestApi.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+				RestUtils.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
 		diff.entriesOnlyOnRight().forEach((k, v) ->
-				pscRestApi.post(url, jsonFormatter.jsonFromObject(v)));
-		diff.entriesDiffering().forEach((k, v) ->
-				pscRestApi.diffUpdatePs(v.leftValue(), v.rightValue()));
+				RestUtils.post(url, jsonFormatter.jsonFromObject(v)));
 
 		System.out.println(System.currentTimeMillis()-startTime);
 	}

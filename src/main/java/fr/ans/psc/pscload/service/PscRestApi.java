@@ -7,6 +7,10 @@ import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
 import fr.ans.psc.pscload.model.response.PsListResponse;
 import fr.ans.psc.pscload.model.response.PsResponse;
+import fr.ans.psc.pscload.service.task.Create;
+import fr.ans.psc.pscload.service.task.Delete;
+import fr.ans.psc.pscload.service.task.Update;
+import fr.ans.psc.pscload.service.task.Task;
 import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,9 +21,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * The type Psc rest api.
@@ -35,6 +38,10 @@ public class PscRestApi {
     private final Request.Builder requestBuilder;
 
     private final OkHttpClient client;
+
+    private final ExecutorService execService = Executors.newFixedThreadPool(8);
+
+    private final Set<Task> todo = new HashSet<>();
 
     @Autowired
     private CustomMetrics customMetrics;
@@ -98,61 +105,6 @@ public class PscRestApi {
     }
 
     /**
-     * Put.
-     *
-     * @param url  the url
-     * @param json json request
-     */
-    public void put(String url, String json) {
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = requestBuilder
-                .url(url)
-                .put(body)
-                .build();
-        sendRequest(request);
-    }
-
-    /**
-     * Post.
-     *
-     * @param url  the url
-     * @param json json request
-     */
-    public void post(String url, String json) {
-        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
-        Request request = requestBuilder
-                .url(url)
-                .post(body)
-                .build();
-        sendRequest(request);
-    }
-
-    /**
-     * Delete.
-     *
-     * @param url the url
-     */
-    public void delete(String url) {
-        Request request = requestBuilder
-                .url(url)
-                .delete()
-                .build();
-        sendRequest(request);
-    }
-
-    private void sendRequest(Request request) {
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            String responseBody = Objects.requireNonNull(response.body()).string();
-            log.info("response body: {}", responseBody);
-            response.close();
-        } catch (IOException e) {
-            log.error("error: {}", e.getMessage());
-        }
-    }
-
-    /**
      * Upload ps map.
      *
      * @param psMap the ps map
@@ -160,10 +112,10 @@ public class PscRestApi {
     public void uploadPsMap(Map<String, Professionnel> psMap) {
         HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
         psSet.parallelStream().forEach(ps -> {
-            put(getPsUrl(), jsonFormatter.jsonFromObject(ps));
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_PROGRESSION).incrementAndGet();
+            RestUtils.post(getPsUrl(), jsonFormatter.jsonFromObject(ps));
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPLOAD_PROGRESSION).incrementAndGet();
         });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPLOAD_PROGRESSION).set(0);
     }
 
     /**
@@ -174,47 +126,10 @@ public class PscRestApi {
     public void uploadStructureMap(Map<String, Structure> structureMap) {
         HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
         structureSet.parallelStream().forEach(structure -> {
-            put(getStructureUrl(), jsonFormatter.jsonFromObject(structure));
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_PROGRESSION).incrementAndGet();
+            RestUtils.post(getStructureUrl(), jsonFormatter.jsonFromObject(structure));
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPLOAD_PROGRESSION).incrementAndGet();
         });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_PROGRESSION).set(0);
-    }
-
-    /**
-     * Diff structure maps.
-     *
-     * @param original the original
-     * @param revised  the revised
-     */
-    public void diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
-        MapDifference<String, Structure> diff = Maps.difference(original, revised);
-
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_SIZE).set(diff.entriesOnlyOnLeft().size());
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_SIZE).set(diff.entriesOnlyOnRight().size());
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_SIZE).set(diff.entriesDiffering().size());
-
-        HashSet<Structure> entriesOnlyOnLeft =
-                new HashSet<>(diff.entriesOnlyOnLeft().values());
-        HashSet<Structure> entriesOnlyOnRight =
-                new HashSet<>(diff.entriesOnlyOnRight().values());
-        HashSet<MapDifference.ValueDifference<Structure>> entriesDiffering =
-                new HashSet<>(diff.entriesDiffering().values());
-
-        entriesOnlyOnLeft.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).incrementAndGet();
-            delete(getStructureUrl() + '/' + URLEncoder.encode(v.getStructureId(), StandardCharsets.UTF_8));
-        });
-        entriesOnlyOnRight.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).incrementAndGet();
-            post(getStructureUrl(), jsonFormatter.jsonFromObject(v));
-        });
-        entriesDiffering.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_PROGRESSION).incrementAndGet();
-            put(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()));
-        });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).set(0);
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_EDIT_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPLOAD_PROGRESSION).set(0);
     }
 
     /**
@@ -222,50 +137,77 @@ public class PscRestApi {
      *
      * @param original OG PS map
      * @param revised  the revised PS map
+     * @return the map difference
      */
-    public void diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
-        MapDifference<String, Professionnel> diff = Maps.difference(original, revised);
+    public MapDifference<String, Professionnel> diffPsMaps(Map<String, Professionnel> original, Map<String, Professionnel> revised) {
+        MapDifference<String, Professionnel> psDiff = Maps.difference(original, revised);
 
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_SIZE).set(diff.entriesOnlyOnLeft().size());
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_SIZE).set(diff.entriesOnlyOnRight().size());
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_SIZE).set(diff.entriesDiffering().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_SIZE).set(psDiff.entriesOnlyOnLeft().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_SIZE).set(psDiff.entriesOnlyOnRight().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_SIZE).set(psDiff.entriesDiffering().size());
 
-        HashSet<Professionnel> entriesOnlyOnLeft =
-                new HashSet<>(diff.entriesOnlyOnLeft().values());
-        HashSet<Professionnel> entriesOnlyOnRight =
-                new HashSet<>(diff.entriesOnlyOnRight().values());
-        HashSet<MapDifference.ValueDifference<Professionnel>> entriesDiffering =
-                new HashSet<>(diff.entriesDiffering().values());
-
-        entriesOnlyOnLeft.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).incrementAndGet();
-            delete(getPsUrl(v.getNationalId()));
-        });
-        entriesOnlyOnRight.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).incrementAndGet();
-            post(getPsUrl(), jsonFormatter.jsonFromObject(v));
-        });
-        entriesDiffering.parallelStream().forEach(v -> {
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_PROGRESSION).incrementAndGet();
-            diffUpdatePs(v.leftValue(), v.rightValue());
-        });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).set(0);
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_EDIT_PROGRESSION).set(0);
+        return psDiff;
     }
 
     /**
-     * Diff update ps.
+     * Diff structure maps.
      *
-     * @param left  the left
-     * @param right the right
+     * @param original the original
+     * @param revised  the revised
+     * @return the map difference
      */
-    public void diffUpdatePs(Professionnel left, Professionnel right) {
+    public MapDifference<String, Structure> diffStructureMaps(Map<String, Structure> original, Map<String, Structure> revised) {
+        MapDifference<String, Structure> structureDiff = Maps.difference(original, revised);
+
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_SIZE).set(structureDiff.entriesOnlyOnLeft().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_SIZE).set(structureDiff.entriesOnlyOnRight().size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_SIZE).set(structureDiff.entriesDiffering().size());
+
+        return structureDiff;
+    }
+
+    /**
+     * Upload changes.
+     *
+     * @param psDiff        the ps diff
+     * @param structureDiff the structure diff
+     * @throws InterruptedException the interrupted exception
+     */
+    public void uploadChanges(MapDifference<String, Professionnel> psDiff,
+                              MapDifference<String, Structure> structureDiff) throws InterruptedException {
+        uploadPsChanges(psDiff);
+        uploadStructureChanges(structureDiff);
+        execService.invokeAll(todo);
+        todo.clear();
+    }
+
+    private void uploadPsChanges(MapDifference<String, Professionnel> diff) {
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).set(0);
+
+        diff.entriesOnlyOnLeft().values().forEach(ps -> todo.add(new Delete(getPsUrl(ps.getNationalId()))));
+        diff.entriesOnlyOnRight().values().forEach(ps -> todo.add(new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
+        diff.entriesDiffering().values().forEach(v -> diffUpdatePs(v.leftValue(), v.rightValue()));
+    }
+
+    private void uploadStructureChanges(MapDifference<String, Structure> diff) {
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).set(0);
+
+        diff.entriesOnlyOnLeft().values().forEach(structure -> todo.add(new Delete(getStructureUrl(structure.getStructureId()))));
+        diff.entriesOnlyOnRight().values().forEach(structure -> todo.add(new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure))));
+        diff.entriesDiffering().values().forEach(v -> todo.add(new Update(
+                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()))));
+    }
+
+    private void diffUpdatePs(Professionnel left, Professionnel right) {
         String psUrl = getPsUrl(left.getNationalId());
 
         if (left.nakedHash() != right.nakedHash()) {
             // update Ps basic attributes
-            put(psUrl, jsonFormatter.nakedPsFromObject(right));
+            todo.add(new Update(psUrl, jsonFormatter.nakedPsFromObject(right)));
         }
 
         // diff professions
@@ -275,8 +217,8 @@ public class PscRestApi {
                 .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getProfessionId);
         MapDifference<String, ExerciceProfessionnel> exProDiff = Maps.difference(leftExPro, rightExPro);
 
-        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExProUrl(psUrl, v.getProfessionId())));
-        exProDiff.entriesOnlyOnRight().forEach((k, v) -> post(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)));
+        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> todo.add(new Delete(getExProUrl(psUrl, v.getProfessionId()))));
+        exProDiff.entriesOnlyOnRight().forEach((k, v) -> todo.add(new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v))));
         exProDiff.entriesDiffering().forEach((k, v) -> diffUpdateExPro(v.leftValue(), v.rightValue(), psUrl));
     }
 
@@ -285,7 +227,7 @@ public class PscRestApi {
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
             // update ExPro basic attributes
-            put(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro));
+            todo.add(new Update(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro)));
         }
 
         // diff expertises
@@ -295,10 +237,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getExpertiseId);
         MapDifference<String, SavoirFaire> expertiseDiff = Maps.difference(leftExpertises, rightExpertises);
 
-        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getExpertiseUrl(exProUrl, v.getExpertiseId())));
-        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> post(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v)));
-        expertiseDiff.entriesDiffering().forEach((k, v) ->
-                put(getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue())));
+        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> todo.add(new Delete(getExpertiseUrl(exProUrl, v.getExpertiseId()))));
+        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> todo.add(new Create(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v))));
+        expertiseDiff.entriesDiffering().forEach((k, v) -> todo.add(new Update(
+                getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue()))));
 
         // diff situations
         Map<String, SituationExercice> leftSituations = Maps
@@ -307,10 +249,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getSituationId);
         MapDifference<String, SituationExercice> situationDiff = Maps.difference(leftSituations, rightSituations);
 
-        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> delete(getSituationUrl(exProUrl, v.getSituationId())));
-        situationDiff.entriesOnlyOnRight().forEach((k, v) -> post(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v)));
+        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> todo.add(new Delete(getSituationUrl(exProUrl, v.getSituationId()))));
+        situationDiff.entriesOnlyOnRight().forEach((k, v) -> todo.add(new Create(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v))));
         situationDiff.entriesDiffering().forEach((k, v) ->
-                put(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())));
+                todo.add(new Update(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue()))));
     }
 
     /**

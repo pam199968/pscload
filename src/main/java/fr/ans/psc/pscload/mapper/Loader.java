@@ -74,8 +74,8 @@ public class Loader {
         parser.parse(new BufferedReader(new FileReader(file)));
         log.info("loading complete!");
 
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_LOAD_SIZE).set(psMap.size());
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_LOAD_SIZE).set(structureMap.size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPLOAD_SIZE).set(psMap.size());
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPLOAD_SIZE).set(structureMap.size());
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(1);  // stage 1: loaded file into map
     }
 
