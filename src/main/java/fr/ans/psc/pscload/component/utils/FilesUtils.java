@@ -42,6 +42,18 @@ public class FilesUtils {
         return unzip(zipFilePath, false);
     }
 
+    public static String getDateStringFromFileName(File file) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMddhhmm");
+
+        String regex = ".*(\\d{12}).*";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher m = pattern.matcher(file.getName());
+        if (m.find()) {
+            return m.group(1);
+        }
+        return dateFormatter.format(new Date(0));
+    }
+
     /**
      * Unzip.
      *

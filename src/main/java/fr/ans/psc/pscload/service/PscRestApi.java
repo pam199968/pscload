@@ -52,14 +52,11 @@ public class PscRestApi {
     @Value("${api.base.url}")
     private String apiBaseUrl;
 
-    @Value("${fixed.thread.pool}")
-    private int nThreads;
-
     /**
      * Instantiates a new Psc rest api.
      *
      */
-    public PscRestApi() {
+    public PscRestApi(@Value("${fixed.thread.pool}") int nThreads) {
         this.execService = Executors.newFixedThreadPool(nThreads);
     }
 
@@ -178,23 +175,24 @@ public class PscRestApi {
      */
     public void uploadChanges(MapDifference<String, Professionnel> psDiff,
                               MapDifference<String, Structure> structureDiff) throws InterruptedException {
-        uploadPsChanges(psDiff);
-        uploadStructureChanges(structureDiff);
+        injectPsDiffTasks(psDiff);
+        injectStructuresDiffTasks(structureDiff);
+        // run all tasks in parallel blocking all other processes
         execService.invokeAll(tasks);
         tasks.clear();
     }
 
-    private void uploadPsChanges(MapDifference<String, Professionnel> diff) {
+    private void injectPsDiffTasks(MapDifference<String, Professionnel> diff) {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).set(0);
 
         diff.entriesOnlyOnLeft().values().forEach(ps -> tasks.add(new Delete(getPsUrl(ps.getNationalId()))));
         diff.entriesOnlyOnRight().values().forEach(ps -> tasks.add(new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
-        diff.entriesDiffering().values().forEach(v -> diffUpdatePs(v.leftValue(), v.rightValue()));
+        diff.entriesDiffering().values().forEach(v -> injectPsUpdateTasks(v.leftValue(), v.rightValue()));
     }
 
-    private void uploadStructureChanges(MapDifference<String, Structure> diff) {
+    private void injectStructuresDiffTasks(MapDifference<String, Structure> diff) {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).set(0);
@@ -205,7 +203,7 @@ public class PscRestApi {
                 getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()))));
     }
 
-    private void diffUpdatePs(Professionnel left, Professionnel right) {
+    private void injectPsUpdateTasks(Professionnel left, Professionnel right) {
         String psUrl = getPsUrl(left.getNationalId());
 
         if (left.nakedHash() != right.nakedHash()) {
@@ -222,10 +220,10 @@ public class PscRestApi {
 
         exProDiff.entriesOnlyOnLeft().forEach((k, v) -> tasks.add(new Delete(getExProUrl(psUrl, v.getProfessionId()))));
         exProDiff.entriesOnlyOnRight().forEach((k, v) -> tasks.add(new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v))));
-        exProDiff.entriesDiffering().forEach((k, v) -> diffUpdateExPro(v.leftValue(), v.rightValue(), psUrl));
+        exProDiff.entriesDiffering().forEach((k, v) -> injectExProUpdateTasks(v.leftValue(), v.rightValue(), psUrl));
     }
 
-    private void diffUpdateExPro(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String psUrl) {
+    private void injectExProUpdateTasks(ExerciceProfessionnel leftExPro, ExerciceProfessionnel rightExPro, String psUrl) {
         String exProUrl = getExProUrl(psUrl, leftExPro.getProfessionId());
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {

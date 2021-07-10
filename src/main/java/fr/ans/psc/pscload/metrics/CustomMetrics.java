@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The type Pscload metrics.
@@ -14,6 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CustomMetrics {
 
     private final Map<CustomMetric, AtomicInteger> appGauges = new EnumMap<>(CustomMetric.class);
+
+    private AtomicLong latestSerDate;
 
     /**
      * The enum Custom metric.
@@ -44,6 +47,8 @@ public class CustomMetrics {
      * @param meterRegistry the meter registry
      */
     public CustomMetrics(MeterRegistry meterRegistry) {
+        latestSerDate = meterRegistry.gauge("latest.ser.date", new AtomicLong(197001010000L));
+
         appGauges.put(CustomMetric.STAGE, meterRegistry.gauge("pscload.stage", new AtomicInteger(0)));
 
         appGauges.put(CustomMetric.PS_UPLOAD_SIZE, meterRegistry.gauge("ps.upload.size", new AtomicInteger(0)));
@@ -74,6 +79,10 @@ public class CustomMetrics {
      */
     public Map<CustomMetric, AtomicInteger> getAppGauges() {
         return appGauges;
+    }
+
+    public AtomicLong getLatestSerDate() {
+        return latestSerDate;
     }
 
 }

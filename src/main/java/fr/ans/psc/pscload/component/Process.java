@@ -61,8 +61,6 @@ public class Process {
 
     private File latestExtract;
 
-    private String serFileName;
-
     private MapDifference<String, Professionnel> psDiff;
 
     private MapDifference<String, Structure> structureDiff;
@@ -126,9 +124,10 @@ public class Process {
      */
     public void serializeMapsToFile() throws FileNotFoundException {
         // serialise latest extract. This step should be done right here otherwise deserializing this file will fail
-        serFileName = latestExtract.getName().replace(".txt", ".ser");
+        String latestExtractDate = FilesUtils.getDateStringFromFileName(latestExtract);
         serializer.serialiseMapsToFile(loader.getPsMap(), loader.getStructureMap(),
-                filesDirectory + "/" + serFileName);
+                filesDirectory + "/" + latestExtractDate.concat(".ser"));
+        customMetrics.getLatestSerDate().set(Long.parseLong(latestExtractDate));
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(4);
     }
 
