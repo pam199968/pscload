@@ -56,6 +56,7 @@ public class Serializer {
         kryo.writeClassAndObject(output, psMap);
         kryo.writeClassAndObject(output, structureMap);
         output.close();
+
         log.info("serialization complete!");
     }
 

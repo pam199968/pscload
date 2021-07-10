@@ -68,6 +68,7 @@ public class FilesUtils {
                 if (isNew(newFile, existingFiles)) {
                     goAhead = true;
                 } else {
+                    log.info("{} is not new, will not be extracted", newFile.getName());
                     zipEntry = zis.getNextEntry();
                     continue;
                 }

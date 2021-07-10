@@ -9,6 +9,7 @@ import fr.ans.psc.pscload.mapper.Serializer;
 import fr.ans.psc.pscload.model.Professionnel;
 import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
+import fr.ans.psc.pscload.service.RestUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,14 +52,14 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		String jsonPs = jsonFormatter.nakedPsFromMessage(message);
-		pscRestApi.put(url, jsonPs);
+		RestUtils.put(url, jsonPs);
 	}
 
 	@Test
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		pscRestApi.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+		RestUtils.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
@@ -71,7 +72,7 @@ class PscloadApplicationTests {
 
 		File file = new File("src/test/resources/download/Extraction_PSC_20001.txt");
 
-		loader.loadFileToMap(file);
+		loader.loadMapFromFile(file);
 
 		Map<String, Professionnel> original = loader.getPsMap();
 
@@ -80,7 +81,7 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
-			pscRestApi.post(url, jsonFormatter.jsonFromObject(ps));
+			RestUtils.post(url, jsonFormatter.jsonFromObject(ps));
 		}
 
 		System.out.println(System.currentTimeMillis()-startTime);
@@ -94,13 +95,13 @@ class PscloadApplicationTests {
 
 		File ogFile = new File("src/test/resources/download/Extraction_PSC_20001.txt");
 
-		loader.loadFileToMap(ogFile);
+		loader.loadMapFromFile(ogFile);
 		Map<String, Professionnel> original = loader.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
 		File newFile = new File("src/test/resources/download/Extraction_PSC_20002.txt");
 
-		loader.loadFileToMap(newFile);
+		loader.loadMapFromFile(newFile);
 		Map<String, Professionnel> revised = loader.getPsMap();
 		System.out.println(System.currentTimeMillis()-startTime);
 
@@ -109,11 +110,9 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
-				pscRestApi.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+				RestUtils.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
 		diff.entriesOnlyOnRight().forEach((k, v) ->
-				pscRestApi.post(url, jsonFormatter.jsonFromObject(v)));
-		diff.entriesDiffering().forEach((k, v) ->
-				pscRestApi.diffUpdatePs(v.leftValue(), v.rightValue()));
+				RestUtils.post(url, jsonFormatter.jsonFromObject(v)));
 
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
@@ -126,7 +125,7 @@ class PscloadApplicationTests {
 		File extFile = new File("src/test/resources/Extraction_PSC.txt");
 
 		//build simple lists of the lines of the two testfiles
-		loader.loadFileToMap(extFile);
+		loader.loadMapFromFile(extFile);
 		Map<String, Professionnel> originalPs = loader.getPsMap();
 		Map<String, Structure> originalStructure = loader.getStructureMap();
 		System.out.println(System.currentTimeMillis()-startTime);

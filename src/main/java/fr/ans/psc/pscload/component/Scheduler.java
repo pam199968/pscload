@@ -15,7 +15,7 @@ import java.security.GeneralSecurityException;
 public class Scheduler {
 
     @Autowired
-    private final Parser parser;
+    private Process process;
 
     @Value("${enable.scheduler:true}")
     private boolean enabled;
@@ -23,17 +23,13 @@ public class Scheduler {
     @Value("${extract.download.url}")
     private String extractDownloadUrl;
 
-    public Scheduler(Parser parser) {
-        this.parser = parser;
-    }
-
     /**
      * Download and parse.
      */
     @Scheduled(fixedDelayString = "${schedule.rate.ms}")
     public void run() throws GeneralSecurityException, IOException {
         if (enabled) {
-            parser.downloadAndParse(extractDownloadUrl);
+            process.downloadAndUnzip(extractDownloadUrl);
         }
     }
 }
