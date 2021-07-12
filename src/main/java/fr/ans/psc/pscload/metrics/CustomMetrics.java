@@ -1,12 +1,12 @@
 package fr.ans.psc.pscload.metrics;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The type Pscload metrics.
@@ -16,7 +16,9 @@ public class CustomMetrics {
 
     private final Map<CustomMetric, AtomicInteger> appGauges = new EnumMap<>(CustomMetric.class);
 
-    private AtomicLong latestSerDate;
+    public static final String SER_FILE = "ser.file";
+
+    public static final String TIMESTAMP = "timestamp";
 
     /**
      * The enum Custom metric.
@@ -47,8 +49,6 @@ public class CustomMetrics {
      * @param meterRegistry the meter registry
      */
     public CustomMetrics(MeterRegistry meterRegistry) {
-        latestSerDate = meterRegistry.gauge("latest.ser.date", new AtomicLong(197001010000L));
-
         appGauges.put(CustomMetric.STAGE, meterRegistry.gauge("pscload.stage", new AtomicInteger(0)));
 
         appGauges.put(CustomMetric.PS_UPLOAD_SIZE, meterRegistry.gauge("ps.upload.size", new AtomicInteger(0)));
@@ -70,6 +70,10 @@ public class CustomMetrics {
         appGauges.put(CustomMetric.STRUCTURE_CREATE_PROGRESSION ,meterRegistry.gauge("structure.create.progression", new AtomicInteger(0)));
         appGauges.put(CustomMetric.STRUCTURE_UPDATE_SIZE,meterRegistry.gauge("structure.update.size", new AtomicInteger(0)));
         appGauges.put(CustomMetric.STRUCTURE_UPDATE_PROGRESSION,meterRegistry.gauge("structure.update.progression", new AtomicInteger(0)));
+
+        Counter.builder(SER_FILE)
+                .tags(TIMESTAMP, "")
+                .register(meterRegistry);
     }
 
     /**
@@ -79,10 +83,6 @@ public class CustomMetrics {
      */
     public Map<CustomMetric, AtomicInteger> getAppGauges() {
         return appGauges;
-    }
-
-    public AtomicLong getLatestSerDate() {
-        return latestSerDate;
     }
 
 }

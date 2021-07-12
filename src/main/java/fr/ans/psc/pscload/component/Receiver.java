@@ -19,6 +19,8 @@ public class Receiver {
     @Autowired
     private final JsonFormatter jsonFormatter;
 
+    private final RestUtils restUtils = new RestUtils();
+
     private final CountDownLatch latch = new CountDownLatch(1);
 
     public Receiver(PscRestApi pscRestApi, JsonFormatter jsonFormatter) {
@@ -28,8 +30,8 @@ public class Receiver {
 
     @RabbitHandler
     public void receiveMessage(String message) {
-        RestUtils.put(pscRestApi.getPsUrl(), jsonFormatter.psFromMessage(message));
-        RestUtils.put(pscRestApi.getStructureUrl(), jsonFormatter.structureFromMessage(message));
+        restUtils.put(pscRestApi.getPsUrl(), jsonFormatter.psFromMessage(message));
+        restUtils.put(pscRestApi.getStructureUrl(), jsonFormatter.structureFromMessage(message));
         latch.countDown();
     }
 

@@ -9,6 +9,7 @@ import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.Professionnel;
 import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
+import io.micrometer.core.instrument.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -127,7 +128,8 @@ public class Process {
         String latestExtractDate = FilesUtils.getDateStringFromFileName(latestExtract);
         serializer.serialiseMapsToFile(loader.getPsMap(), loader.getStructureMap(),
                 filesDirectory + "/" + latestExtractDate.concat(".ser"));
-        customMetrics.getLatestSerDate().set(Long.parseLong(latestExtractDate));
+
+        Metrics.counter(CustomMetrics.SER_FILE, CustomMetrics.TIMESTAMP, latestExtractDate).increment();
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(4);
     }
 
@@ -137,24 +139,21 @@ public class Process {
     public void computeDiff() {
         psDiff = pscRestApi.diffPsMaps(serializer.getPsMap(), loader.getPsMap());
         structureDiff = pscRestApi.diffStructureMaps(serializer.getStructureMap(), loader.getStructureMap());
+
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(5);
     }
 
     /**
      * Load changes.
+     *
+     * @throws InterruptedException interrupted exception
      */
     public void uploadChanges() throws InterruptedException {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(6);
-        pscRestApi.uploadChanges(psDiff, structureDiff);
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(0);
-    }
 
-    /**
-     * Upload full.
-     */
-    public void uploadFull() {
-        pscRestApi.uploadPsMap(loader.getPsMap());
-        pscRestApi.uploadStructureMap(loader.getStructureMap());
+        pscRestApi.uploadChanges(psDiff, structureDiff);
+
+        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(0);
     }
 
 }

@@ -222,14 +222,6 @@ class ProcessController {
         return "uploading changes complete!";
     }
 
-    @PostMapping(value = "/process/upload/full", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String uploadFull() {
-        log.info("full upload started");
-        process.uploadFull();
-        log.info("full upload finished");
-        return "full upload complete!";
-    }
-
     @PostMapping(value = "/process/run", produces = MediaType.APPLICATION_JSON_VALUE)
     public String runFullProcess() throws IOException, InterruptedException {
         log.info("running full process");
@@ -238,16 +230,6 @@ class ProcessController {
         process.serializeMapsToFile();
         process.computeDiff();
         process.uploadChanges();
-        log.info("full upload finished");
-        return "full upload complete!";
-    }
-
-    @PostMapping(value = "/process/runCreate", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String runCreateProcess() throws IOException {
-        log.info("running full process");
-        process.loadLatestFile();
-        process.serializeMapsToFile();
-        process.uploadFull();
         log.info("full upload finished");
         return "full upload complete!";
     }

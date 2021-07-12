@@ -1,7 +1,5 @@
 package fr.ans.psc.pscload.service.task;
 
-import fr.ans.psc.pscload.service.RestUtils;
-
 /**
  * The type Update.
  */
@@ -23,8 +21,8 @@ public class Update extends Task {
     }
 
     @Override
-    public Object call() throws Exception {
-        RestUtils.put(url, json);
+    public Object call() {
+        restUtils.put(url, json);
         return null;
     }
 

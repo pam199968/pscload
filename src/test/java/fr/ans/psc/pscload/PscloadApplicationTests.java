@@ -35,6 +35,8 @@ class PscloadApplicationTests {
 	@Autowired
 	PscRestApi pscRestApi;
 
+	private final RestUtils restUtils = new RestUtils();
+
 	@Test
 	@Disabled
 	void downloadTest() throws GeneralSecurityException, IOException {
@@ -52,14 +54,14 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		String jsonPs = jsonFormatter.nakedPsFromMessage(message);
-		RestUtils.put(url, jsonPs);
+		//RestUtils.put(url, jsonPs);
 	}
 
 	@Test
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		RestUtils.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+		restUtils.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
@@ -81,7 +83,7 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
-			RestUtils.post(url, jsonFormatter.jsonFromObject(ps));
+			restUtils.post(url, jsonFormatter.jsonFromObject(ps));
 		}
 
 		System.out.println(System.currentTimeMillis()-startTime);
@@ -110,10 +112,9 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
-				RestUtils.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+				restUtils.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
 		diff.entriesOnlyOnRight().forEach((k, v) ->
-				RestUtils.post(url, jsonFormatter.jsonFromObject(v)));
-
+				restUtils.post(url, jsonFormatter.jsonFromObject(v)));
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 

@@ -1,7 +1,5 @@
 package fr.ans.psc.pscload.service.task;
 
-import fr.ans.psc.pscload.service.RestUtils;
-
 /**
  * The type Create.
  */
@@ -23,8 +21,8 @@ public class Create extends Task {
     }
 
     @Override
-    public Object call() throws Exception {
-        RestUtils.post(url, json);
+    public Object call() {
+        restUtils.post(url, json);
         return null;
     }
 

@@ -5,41 +5,27 @@ import com.google.common.collect.Maps;
 import fr.ans.psc.pscload.component.JsonFormatter;
 import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
-import fr.ans.psc.pscload.model.response.PsListResponse;
-import fr.ans.psc.pscload.model.response.PsResponse;
 import fr.ans.psc.pscload.service.task.Create;
 import fr.ans.psc.pscload.service.task.Delete;
-import fr.ans.psc.pscload.service.task.Update;
 import fr.ans.psc.pscload.service.task.Task;
-import okhttp3.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import fr.ans.psc.pscload.service.task.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * The type Psc rest api.
  */
 @Service
 public class PscRestApi {
-
-    /**
-     * The logger.
-     */
-    private static final Logger log = LoggerFactory.getLogger(PscRestApi.class);
-
-    private final ExecutorService execService;
-
-    private final Request.Builder requestBuilder = new Request.Builder();
-
-    private final OkHttpClient client = new OkHttpClient();
 
     private final Set<Task> tasks = new HashSet<>();
 
@@ -52,85 +38,8 @@ public class PscRestApi {
     @Value("${api.base.url}")
     private String apiBaseUrl;
 
-    /**
-     * Instantiates a new Psc rest api.
-     *
-     */
-    public PscRestApi(@Value("${fixed.thread.pool}") int nThreads) {
-        this.execService = Executors.newFixedThreadPool(nThreads);
-    }
-
-    /**
-     * Gets ps list.
-     *
-     * @param url the url
-     * @return the ps list
-     */
-    public PsListResponse getPsList(String url) {
-        Request request = requestBuilder
-                .url(url)
-                .build();
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            String responseBody = Objects.requireNonNull(response.body()).string();
-            log.info("response body: {}", responseBody);
-            return jsonFormatter.psListFromJson(Objects.requireNonNull(response.body()).string());
-        } catch (IOException e) {
-            log.error("error: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Gets ps.
-     *
-     * @param url the url
-     * @return the ps
-     */
-    public PsResponse getPs(String url) {
-        Request request = requestBuilder
-                .url(url)
-                .build();
-        Call call = client.newCall(request);
-        try {
-            Response response = call.execute();
-            String responseBody = Objects.requireNonNull(response.body()).string();
-            log.info("response body: {}", responseBody);
-            return jsonFormatter.psFromJson(Objects.requireNonNull(response.body()).string());
-        } catch (IOException e) {
-            log.error("error: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Upload ps map.
-     *
-     * @param psMap the ps map
-     */
-    public void uploadPsMap(Map<String, Professionnel> psMap) {
-        HashSet<Professionnel> psSet = new HashSet<>(psMap.values());
-        psSet.parallelStream().forEach(ps -> {
-            RestUtils.post(getPsUrl(), jsonFormatter.jsonFromObject(ps));
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPLOAD_PROGRESSION).incrementAndGet();
-        });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPLOAD_PROGRESSION).set(0);
-    }
-
-    /**
-     * Upload structure map.
-     *
-     * @param structureMap the structure map
-     */
-    public void uploadStructureMap(Map<String, Structure> structureMap) {
-        HashSet<Structure> structureSet = new HashSet<>(structureMap.values());
-        structureSet.parallelStream().forEach(structure -> {
-            RestUtils.post(getStructureUrl(), jsonFormatter.jsonFromObject(structure));
-            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPLOAD_PROGRESSION).incrementAndGet();
-        });
-        customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPLOAD_PROGRESSION).set(0);
-    }
+    @Value("${fixed.thread.pool}")
+    private int nThreads;
 
     /**
      * Diff PS maps.
@@ -177,8 +86,10 @@ public class PscRestApi {
                               MapDifference<String, Structure> structureDiff) throws InterruptedException {
         injectPsDiffTasks(psDiff);
         injectStructuresDiffTasks(structureDiff);
-        // run all tasks in parallel blocking all other processes
+        // run all tasks in parallel blocking all other processes until all tasks complete
+        final ExecutorService execService = Executors.newFixedThreadPool(nThreads);
         execService.invokeAll(tasks);
+        execService.shutdown();
         tasks.clear();
     }
 

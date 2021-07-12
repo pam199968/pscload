@@ -1,7 +1,5 @@
 package fr.ans.psc.pscload.service.task;
 
-import fr.ans.psc.pscload.service.RestUtils;
-
 /**
  * The type Delete.
  */
@@ -19,8 +17,8 @@ public class Delete extends Task {
     }
 
     @Override
-    public Object call() throws Exception {
-        RestUtils.delete(url);
+    public Object call() {
+        restUtils.delete(url);
         return null;
     }
 

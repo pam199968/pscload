@@ -11,11 +11,9 @@ public class RestUtils {
 
     private static final Logger log = LoggerFactory.getLogger(RestUtils.class);
 
-    private static final Request.Builder requestBuilder = new Request.Builder();
+    private final Request.Builder requestBuilder = new Request.Builder();
 
-    private static final OkHttpClient client = new OkHttpClient();
-
-    private RestUtils() {}
+    private final OkHttpClient client = new OkHttpClient();
 
     /**
      * Put.
@@ -23,7 +21,7 @@ public class RestUtils {
      * @param url  the url
      * @param json json request
      */
-    public static void put(String url, String json) {
+    public void put(String url, String json) {
         RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
         Request request = requestBuilder
                 .url(url)
@@ -38,7 +36,7 @@ public class RestUtils {
      * @param url  the url
      * @param json json request
      */
-    public static void post(String url, String json) {
+    public void post(String url, String json) {
         RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
         Request request = requestBuilder
                 .url(url)
@@ -52,7 +50,7 @@ public class RestUtils {
      *
      * @param url the url
      */
-    public static void delete(String url) {
+    public void delete(String url) {
         Request request = requestBuilder
                 .url(url)
                 .delete()
@@ -60,7 +58,7 @@ public class RestUtils {
         sendRequest(request);
     }
 
-    private static void sendRequest(Request request) {
+    private void sendRequest(Request request) {
         Call call = client.newCall(request);
         try {
             Response response = call.execute();
