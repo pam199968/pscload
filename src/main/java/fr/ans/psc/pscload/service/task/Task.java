@@ -9,23 +9,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
 /**
  * The type Task.
  */
-public abstract class Task implements Callable<Object> {
+public abstract class Task {
 
     private static final Logger log = LoggerFactory.getLogger(Task.class);
 
     private final OkHttpClient client = new OkHttpClient();
 
-    final Request.Builder requestBuilder = new Request.Builder();
+    // We use this header in order to close the connection after each request
+    final Request.Builder requestBuilder = new Request.Builder().header("Connection", "close");
 
-    @Override
-    public Object call() {
-        return null;
-    }
+    public void send() {}
 
     void sendRequest(Request request) {
         Call call = client.newCall(request);

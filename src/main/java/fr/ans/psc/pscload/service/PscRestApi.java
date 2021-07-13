@@ -82,8 +82,8 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().parallelStream().forEach(ps -> new Delete(getPsUrl(ps.getNationalId())).call());
-        diff.entriesOnlyOnRight().values().parallelStream().forEach(ps -> new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps)).call());
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(ps -> new Delete(getPsUrl(ps.getNationalId())).send());
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(ps -> new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps)).send());
         diff.entriesDiffering().values().parallelStream().forEach(v -> injectPsUpdateTasks(v.leftValue(), v.rightValue()));
     }
 
@@ -92,10 +92,10 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().parallelStream().forEach(structure -> new Delete(getStructureUrl(structure.getStructureId())).call());
-        diff.entriesOnlyOnRight().values().parallelStream().forEach(structure -> new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure)).call());
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(structure -> new Delete(getStructureUrl(structure.getStructureId())).send());
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(structure -> new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure)).send());
         diff.entriesDiffering().values().parallelStream().forEach(v -> new Update(
-                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
+                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())).send());
     }
 
     private void injectPsUpdateTasks(Professionnel left, Professionnel right) {
@@ -103,7 +103,7 @@ public class PscRestApi {
 
         if (left.nakedHash() != right.nakedHash()) {
             // update Ps basic attributes
-            new Update(psUrl, jsonFormatter.nakedPsFromObject(right)).call();
+            new Update(psUrl, jsonFormatter.nakedPsFromObject(right)).send();
         }
 
         // diff professions
@@ -113,8 +113,8 @@ public class PscRestApi {
                 .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getProfessionId);
         MapDifference<String, ExerciceProfessionnel> exProDiff = Maps.difference(leftExPro, rightExPro);
 
-        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExProUrl(psUrl, v.getProfessionId())).call());
-        exProDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)).call());
+        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExProUrl(psUrl, v.getProfessionId())).send());
+        exProDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)).send());
         exProDiff.entriesDiffering().forEach((k, v) -> injectExProUpdateTasks(v.leftValue(), v.rightValue(), psUrl));
     }
 
@@ -123,7 +123,7 @@ public class PscRestApi {
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
             // update ExPro basic attributes
-            new Update(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro)).call();
+            new Update(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro)).send();
         }
 
         // diff expertises
@@ -133,10 +133,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getExpertiseId);
         MapDifference<String, SavoirFaire> expertiseDiff = Maps.difference(leftExpertises, rightExpertises);
 
-        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExpertiseUrl(exProUrl, v.getExpertiseId())).call());
-        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v)).call());
+        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExpertiseUrl(exProUrl, v.getExpertiseId())).send());
+        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v)).send());
         expertiseDiff.entriesDiffering().forEach((k, v) -> new Update(
-                getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
+                getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue())).send());
 
         // diff situations
         Map<String, SituationExercice> leftSituations = Maps
@@ -145,10 +145,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getSituationId);
         MapDifference<String, SituationExercice> situationDiff = Maps.difference(leftSituations, rightSituations);
 
-        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getSituationUrl(exProUrl, v.getSituationId())).call());
-        situationDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v)).call());
+        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getSituationUrl(exProUrl, v.getSituationId())).send());
+        situationDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v)).send());
         situationDiff.entriesDiffering().forEach((k, v) ->
-                new Update(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
+                new Update(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())).send());
     }
 
     /**

@@ -25,9 +25,8 @@ public class Update extends Task {
     }
 
     @Override
-    public Object call() {
+    public void send() {
         put(url, json);
-        return null;
     }
 
     /**

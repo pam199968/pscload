@@ -19,9 +19,8 @@ public class Delete extends Task {
     }
 
     @Override
-    public Object call() {
+    public void send() {
         delete(url);
-        return null;
     }
 
     /**

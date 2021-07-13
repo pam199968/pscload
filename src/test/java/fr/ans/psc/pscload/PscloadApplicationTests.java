@@ -60,7 +60,7 @@ class PscloadApplicationTests {
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		new Delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8)).call();
+		new Delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8)).send();
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
@@ -82,7 +82,7 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
-			new Create(url, jsonFormatter.jsonFromObject(ps)).call();
+			new Create(url, jsonFormatter.jsonFromObject(ps)).send();
 		}
 
 		System.out.println(System.currentTimeMillis()-startTime);
@@ -111,9 +111,9 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
-				new Delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)).call());
+				new Delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)).send());
 		diff.entriesOnlyOnRight().forEach((k, v) ->
-				new Create(url, jsonFormatter.jsonFromObject(v)).call());
+				new Create(url, jsonFormatter.jsonFromObject(v)).send());
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 

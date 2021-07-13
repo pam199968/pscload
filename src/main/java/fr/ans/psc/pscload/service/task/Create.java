@@ -25,9 +25,8 @@ public class Create extends Task {
     }
 
     @Override
-    public Object call() {
+    public void send() {
         post(url, json);
-        return null;
     }
 
     /**
