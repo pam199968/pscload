@@ -1,5 +1,7 @@
 package fr.ans.psc.pscload.service.task;
 
+import okhttp3.Request;
+
 /**
  * The type Delete.
  */
@@ -18,8 +20,21 @@ public class Delete extends Task {
 
     @Override
     public Object call() {
-        restUtils.delete(url);
+        delete(url);
         return null;
+    }
+
+    /**
+     * Delete.
+     *
+     * @param url the url
+     */
+    private void delete(String url) {
+        Request request = requestBuilder
+                .url(url)
+                .delete()
+                .build();
+        sendRequest(request);
     }
 
 }

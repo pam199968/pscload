@@ -1,5 +1,9 @@
 package fr.ans.psc.pscload.service.task;
 
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+
 /**
  * The type Update.
  */
@@ -22,8 +26,23 @@ public class Update extends Task {
 
     @Override
     public Object call() {
-        restUtils.put(url, json);
+        put(url, json);
         return null;
+    }
+
+    /**
+     * Put.
+     *
+     * @param url  the url
+     * @param json json request
+     */
+    private void put(String url, String json) {
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+        Request request = requestBuilder
+                .url(url)
+                .put(body)
+                .build();
+        sendRequest(request);
     }
 
 }

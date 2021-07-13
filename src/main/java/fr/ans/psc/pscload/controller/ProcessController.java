@@ -215,7 +215,7 @@ class ProcessController {
      * @return the string
      */
     @PostMapping(value = "/process/upload/diff", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String uploadDiff() throws InterruptedException {
+    public String uploadDiff() {
         log.info("uploading changes");
         process.uploadChanges();
         log.info("uploading changes finished");
@@ -223,7 +223,7 @@ class ProcessController {
     }
 
     @PostMapping(value = "/process/run", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String runFullProcess() throws IOException, InterruptedException {
+    public String runFullProcess() throws IOException {
         log.info("running full process");
         process.loadLatestFile();
         process.deserializeFileToMaps();

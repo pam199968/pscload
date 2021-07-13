@@ -146,9 +146,8 @@ public class Process {
     /**
      * Load changes.
      *
-     * @throws InterruptedException interrupted exception
      */
-    public void uploadChanges() throws InterruptedException {
+    public void uploadChanges() {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(6);
 
         pscRestApi.uploadChanges(psDiff, structureDiff);

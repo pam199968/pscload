@@ -9,7 +9,8 @@ import fr.ans.psc.pscload.mapper.Serializer;
 import fr.ans.psc.pscload.model.Professionnel;
 import fr.ans.psc.pscload.model.Structure;
 import fr.ans.psc.pscload.service.PscRestApi;
-import fr.ans.psc.pscload.service.RestUtils;
+import fr.ans.psc.pscload.service.task.Create;
+import fr.ans.psc.pscload.service.task.Delete;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +36,6 @@ class PscloadApplicationTests {
 	@Autowired
 	PscRestApi pscRestApi;
 
-	private final RestUtils restUtils = new RestUtils();
-
 	@Test
 	@Disabled
 	void downloadTest() throws GeneralSecurityException, IOException {
@@ -61,7 +60,7 @@ class PscloadApplicationTests {
 	@Disabled
 	void restServiceTest() {
 		String url = "http://localhost:8000/api/ps";
-		restUtils.delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8));
+		new Delete(url + '/' + URLEncoder.encode("49278795704225/20005332", StandardCharsets.UTF_8)).call();
 //		PsListResponse psListResponse = pscRestApi.getPsList(url);
 		System.out.println("fae");
 	}
@@ -83,7 +82,7 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		for (Professionnel ps : original.values()) {
-			restUtils.post(url, jsonFormatter.jsonFromObject(ps));
+			new Create(url, jsonFormatter.jsonFromObject(ps)).call();
 		}
 
 		System.out.println(System.currentTimeMillis()-startTime);
@@ -112,9 +111,9 @@ class PscloadApplicationTests {
 		JsonFormatter jsonFormatter = new JsonFormatter();
 
 		diff.entriesOnlyOnLeft().forEach((k, v) ->
-				restUtils.delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)));
+				new Delete(url + '/' + URLEncoder.encode(v.getNationalId(), StandardCharsets.UTF_8)).call());
 		diff.entriesOnlyOnRight().forEach((k, v) ->
-				restUtils.post(url, jsonFormatter.jsonFromObject(v)));
+				new Create(url, jsonFormatter.jsonFromObject(v)).call());
 		System.out.println(System.currentTimeMillis()-startTime);
 	}
 

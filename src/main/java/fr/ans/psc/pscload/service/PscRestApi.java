@@ -7,7 +7,6 @@ import fr.ans.psc.pscload.metrics.CustomMetrics;
 import fr.ans.psc.pscload.model.*;
 import fr.ans.psc.pscload.service.task.Create;
 import fr.ans.psc.pscload.service.task.Delete;
-import fr.ans.psc.pscload.service.task.Task;
 import fr.ans.psc.pscload.service.task.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,19 +14,13 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * The type Psc rest api.
  */
 @Service
 public class PscRestApi {
-
-    private final Set<Task> tasks = new HashSet<>();
 
     @Autowired
     private CustomMetrics customMetrics;
@@ -37,9 +30,6 @@ public class PscRestApi {
 
     @Value("${api.base.url}")
     private String apiBaseUrl;
-
-    @Value("${fixed.thread.pool}")
-    private int nThreads;
 
     /**
      * Diff PS maps.
@@ -80,17 +70,11 @@ public class PscRestApi {
      *
      * @param psDiff        the ps diff
      * @param structureDiff the structure diff
-     * @throws InterruptedException the interrupted exception
      */
     public void uploadChanges(MapDifference<String, Professionnel> psDiff,
-                              MapDifference<String, Structure> structureDiff) throws InterruptedException {
+                              MapDifference<String, Structure> structureDiff) {
         injectPsDiffTasks(psDiff);
         injectStructuresDiffTasks(structureDiff);
-        // run all tasks in parallel blocking all other processes until all tasks complete
-        final ExecutorService execService = Executors.newFixedThreadPool(nThreads);
-        execService.invokeAll(tasks);
-        execService.shutdown();
-        tasks.clear();
     }
 
     private void injectPsDiffTasks(MapDifference<String, Professionnel> diff) {
@@ -98,9 +82,9 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().forEach(ps -> tasks.add(new Delete(getPsUrl(ps.getNationalId()))));
-        diff.entriesOnlyOnRight().values().forEach(ps -> tasks.add(new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps))));
-        diff.entriesDiffering().values().forEach(v -> injectPsUpdateTasks(v.leftValue(), v.rightValue()));
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(ps -> new Delete(getPsUrl(ps.getNationalId())).call());
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(ps -> new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps)).call());
+        diff.entriesDiffering().values().parallelStream().forEach(v -> injectPsUpdateTasks(v.leftValue(), v.rightValue()));
     }
 
     private void injectStructuresDiffTasks(MapDifference<String, Structure> diff) {
@@ -108,10 +92,10 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().forEach(structure -> tasks.add(new Delete(getStructureUrl(structure.getStructureId()))));
-        diff.entriesOnlyOnRight().values().forEach(structure -> tasks.add(new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure))));
-        diff.entriesDiffering().values().forEach(v -> tasks.add(new Update(
-                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue()))));
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(structure -> new Delete(getStructureUrl(structure.getStructureId())).call());
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(structure -> new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure)).call());
+        diff.entriesDiffering().values().parallelStream().forEach(v -> new Update(
+                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
     }
 
     private void injectPsUpdateTasks(Professionnel left, Professionnel right) {
@@ -119,7 +103,7 @@ public class PscRestApi {
 
         if (left.nakedHash() != right.nakedHash()) {
             // update Ps basic attributes
-            tasks.add(new Update(psUrl, jsonFormatter.nakedPsFromObject(right)));
+            new Update(psUrl, jsonFormatter.nakedPsFromObject(right)).call();
         }
 
         // diff professions
@@ -129,8 +113,8 @@ public class PscRestApi {
                 .uniqueIndex(right.getProfessions(), ExerciceProfessionnel::getProfessionId);
         MapDifference<String, ExerciceProfessionnel> exProDiff = Maps.difference(leftExPro, rightExPro);
 
-        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> tasks.add(new Delete(getExProUrl(psUrl, v.getProfessionId()))));
-        exProDiff.entriesOnlyOnRight().forEach((k, v) -> tasks.add(new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v))));
+        exProDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExProUrl(psUrl, v.getProfessionId())).call());
+        exProDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExProUrl(psUrl), jsonFormatter.jsonFromObject(v)).call());
         exProDiff.entriesDiffering().forEach((k, v) -> injectExProUpdateTasks(v.leftValue(), v.rightValue(), psUrl));
     }
 
@@ -139,7 +123,7 @@ public class PscRestApi {
 
         if (leftExPro.nakedHash() != rightExPro.nakedHash()) {
             // update ExPro basic attributes
-            tasks.add(new Update(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro)));
+            new Update(exProUrl, jsonFormatter.nakedExProFromObject(rightExPro)).call();
         }
 
         // diff expertises
@@ -149,10 +133,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getExpertises(), SavoirFaire::getExpertiseId);
         MapDifference<String, SavoirFaire> expertiseDiff = Maps.difference(leftExpertises, rightExpertises);
 
-        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> tasks.add(new Delete(getExpertiseUrl(exProUrl, v.getExpertiseId()))));
-        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> tasks.add(new Create(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v))));
-        expertiseDiff.entriesDiffering().forEach((k, v) -> tasks.add(new Update(
-                getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue()))));
+        expertiseDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getExpertiseUrl(exProUrl, v.getExpertiseId())).call());
+        expertiseDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getExpertiseUrl(exProUrl), jsonFormatter.jsonFromObject(v)).call());
+        expertiseDiff.entriesDiffering().forEach((k, v) -> new Update(
+                getExpertiseUrl(exProUrl, v.rightValue().getExpertiseId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
 
         // diff situations
         Map<String, SituationExercice> leftSituations = Maps
@@ -161,10 +145,10 @@ public class PscRestApi {
                 .uniqueIndex(rightExPro.getWorkSituations(), SituationExercice::getSituationId);
         MapDifference<String, SituationExercice> situationDiff = Maps.difference(leftSituations, rightSituations);
 
-        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> tasks.add(new Delete(getSituationUrl(exProUrl, v.getSituationId()))));
-        situationDiff.entriesOnlyOnRight().forEach((k, v) -> tasks.add(new Create(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v))));
+        situationDiff.entriesOnlyOnLeft().forEach((k, v) -> new Delete(getSituationUrl(exProUrl, v.getSituationId())).call());
+        situationDiff.entriesOnlyOnRight().forEach((k, v) -> new Create(getSituationUrl(exProUrl), jsonFormatter.jsonFromObject(v)).call());
         situationDiff.entriesDiffering().forEach((k, v) ->
-                tasks.add(new Update(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue()))));
+                new Update(getSituationUrl(exProUrl, v.rightValue().getSituationId()), jsonFormatter.jsonFromObject(v.rightValue())).call());
     }
 
     /**
