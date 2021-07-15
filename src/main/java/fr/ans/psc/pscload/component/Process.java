@@ -81,7 +81,7 @@ public class Process {
         String zipFile = SSLUtils.downloadFile(downloadUrl, filesDirectory);
 
         // unzipping only if txt file is newer than what we already have
-        if (zipFile != null && FilesUtils.unzip(zipFile)) {
+        if (zipFile != null && FilesUtils.unzip(zipFile, true)) {
             // stage 1: download and unzip successful
             customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STAGE).set(1);
         }

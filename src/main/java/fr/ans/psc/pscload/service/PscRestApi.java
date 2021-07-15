@@ -82,9 +82,18 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().parallelStream().forEach(ps -> new Delete(getPsUrl(ps.getNationalId())).send());
-        diff.entriesOnlyOnRight().values().parallelStream().forEach(ps -> new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps)).send());
-        diff.entriesDiffering().values().parallelStream().forEach(v -> injectPsUpdateTasks(v.leftValue(), v.rightValue()));
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(ps -> {
+            new Delete(getPsUrl(ps.getNationalId())).send();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_DELETE_PROGRESSION).incrementAndGet();
+        });
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(ps -> {
+            new Create(getPsUrl(), jsonFormatter.jsonFromObject(ps)).send();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_CREATE_PROGRESSION).incrementAndGet();
+        });
+        diff.entriesDiffering().values().parallelStream().forEach(v -> {
+            injectPsUpdateTasks(v.leftValue(), v.rightValue());
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.PS_UPDATE_PROGRESSION).incrementAndGet();
+        });
     }
 
     private void injectStructuresDiffTasks(MapDifference<String, Structure> diff) {
@@ -92,10 +101,18 @@ public class PscRestApi {
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).set(0);
         customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).set(0);
 
-        diff.entriesOnlyOnLeft().values().parallelStream().forEach(structure -> new Delete(getStructureUrl(structure.getStructureId())).send());
-        diff.entriesOnlyOnRight().values().parallelStream().forEach(structure -> new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure)).send());
-        diff.entriesDiffering().values().parallelStream().forEach(v -> new Update(
-                getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())).send());
+        diff.entriesOnlyOnLeft().values().parallelStream().forEach(structure -> {
+            new Delete(getStructureUrl(structure.getStructureId())).send();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_DELETE_PROGRESSION).incrementAndGet();
+        });
+        diff.entriesOnlyOnRight().values().parallelStream().forEach(structure -> {
+            new Create(getStructureUrl(), jsonFormatter.jsonFromObject(structure)).send();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_CREATE_PROGRESSION).incrementAndGet();
+        });
+        diff.entriesDiffering().values().parallelStream().forEach(v -> {
+            new Update(getStructureUrl(v.leftValue().getStructureId()), jsonFormatter.jsonFromObject(v.rightValue())).send();
+            customMetrics.getAppGauges().get(CustomMetrics.CustomMetric.STRUCTURE_UPDATE_PROGRESSION).incrementAndGet();
+        });
     }
 
     private void injectPsUpdateTasks(Professionnel left, Professionnel right) {
