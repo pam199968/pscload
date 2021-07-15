@@ -1,6 +1,7 @@
 package fr.ans.psc.pscload.controller;
 
 import fr.ans.psc.pscload.component.Process;
+import fr.ans.psc.pscload.component.utils.FilesUtils;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +85,7 @@ class ProcessController {
     public String clean() throws IOException {
         String[] fileList = Stream.of(Objects.requireNonNull(new File(filesDirectory).listFiles()))
                 .map(File::getAbsolutePath).distinct().toArray(String[]::new);
-        for (String file : fileList)
-        {
+        for (String file : fileList) {
             if (!file.endsWith(".ser")) {
                 boolean isDeleted = Files.deleteIfExists(Path.of(file));
                 log.info("file: {} is deleted: {}", file, isDeleted);
@@ -215,39 +215,22 @@ class ProcessController {
      * @return the string
      */
     @PostMapping(value = "/process/upload/diff", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String uploadDiff() throws InterruptedException {
+    public String uploadDiff() throws IOException {
         log.info("uploading changes");
         process.uploadChanges();
+        FilesUtils.cleanup(filesDirectory);
         log.info("uploading changes finished");
         return "uploading changes complete!";
     }
 
-    @PostMapping(value = "/process/upload/full", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String uploadFull() {
-        log.info("full upload started");
-        process.uploadFull();
-        log.info("full upload finished");
-        return "full upload complete!";
-    }
-
     @PostMapping(value = "/process/run", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String runFullProcess() throws IOException, InterruptedException {
+    public String runFullProcess() throws IOException {
         log.info("running full process");
         process.loadLatestFile();
         process.deserializeFileToMaps();
-        process.serializeMapsToFile();
         process.computeDiff();
-        process.uploadChanges();
-        log.info("full upload finished");
-        return "full upload complete!";
-    }
-
-    @PostMapping(value = "/process/runCreate", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String runCreateProcess() throws IOException {
-        log.info("running full process");
-        process.loadLatestFile();
         process.serializeMapsToFile();
-        process.uploadFull();
+        process.uploadChanges();
         log.info("full upload finished");
         return "full upload complete!";
     }

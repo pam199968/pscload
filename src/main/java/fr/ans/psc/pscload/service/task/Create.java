@@ -1,6 +1,8 @@
 package fr.ans.psc.pscload.service.task;
 
-import fr.ans.psc.pscload.service.RestUtils;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 
 /**
  * The type Create.
@@ -23,9 +25,23 @@ public class Create extends Task {
     }
 
     @Override
-    public Object call() throws Exception {
-        RestUtils.post(url, json);
-        return null;
+    public void send() {
+        post(url, json);
+    }
+
+    /**
+     * Post.
+     *
+     * @param url  the url
+     * @param json json request
+     */
+    private void post(String url, String json) {
+        RequestBody body = RequestBody.create(json, MediaType.parse("application/json"));
+        Request request = requestBuilder
+                .url(url)
+                .post(body)
+                .build();
+        sendRequest(request);
     }
 
 }

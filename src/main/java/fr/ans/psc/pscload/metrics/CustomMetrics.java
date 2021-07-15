@@ -1,5 +1,6 @@
 package fr.ans.psc.pscload.metrics;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CustomMetrics {
 
     private final Map<CustomMetric, AtomicInteger> appGauges = new EnumMap<>(CustomMetric.class);
+
+    public static final String SER_FILE = "ser.file";
+
+    public static final String TIMESTAMP = "timestamp";
 
     /**
      * The enum Custom metric.
@@ -56,15 +61,19 @@ public class CustomMetrics {
         appGauges.put(CustomMetric.PS_DELETE_PROGRESSION ,meterRegistry.gauge("ps.delete.progression", new AtomicInteger(0)));
         appGauges.put(CustomMetric.PS_CREATE_SIZE ,meterRegistry.gauge("ps.create.size", new AtomicInteger(0)));
         appGauges.put(CustomMetric.PS_CREATE_PROGRESSION ,meterRegistry.gauge("ps.create.progression", new AtomicInteger(0)));
-        appGauges.put(CustomMetric.PS_UPDATE_SIZE,meterRegistry.gauge("ps.edit.size", new AtomicInteger(0)));
-        appGauges.put(CustomMetric.PS_UPDATE_PROGRESSION,meterRegistry.gauge("ps.edit.progression", new AtomicInteger(0)));
+        appGauges.put(CustomMetric.PS_UPDATE_SIZE,meterRegistry.gauge("ps.update.size", new AtomicInteger(0)));
+        appGauges.put(CustomMetric.PS_UPDATE_PROGRESSION,meterRegistry.gauge("ps.update.progression", new AtomicInteger(0)));
 
         appGauges.put(CustomMetric.STRUCTURE_DELETE_SIZE ,meterRegistry.gauge("structure.delete.size", new AtomicInteger(0)));
         appGauges.put(CustomMetric.STRUCTURE_DELETE_PROGRESSION ,meterRegistry.gauge("structure.delete.progression", new AtomicInteger(0)));
         appGauges.put(CustomMetric.STRUCTURE_CREATE_SIZE ,meterRegistry.gauge("structure.create.size", new AtomicInteger(0)));
         appGauges.put(CustomMetric.STRUCTURE_CREATE_PROGRESSION ,meterRegistry.gauge("structure.create.progression", new AtomicInteger(0)));
-        appGauges.put(CustomMetric.STRUCTURE_UPDATE_SIZE,meterRegistry.gauge("structure.edit.size", new AtomicInteger(0)));
-        appGauges.put(CustomMetric.STRUCTURE_UPDATE_PROGRESSION,meterRegistry.gauge("structure.edit.progression", new AtomicInteger(0)));
+        appGauges.put(CustomMetric.STRUCTURE_UPDATE_SIZE,meterRegistry.gauge("structure.update.size", new AtomicInteger(0)));
+        appGauges.put(CustomMetric.STRUCTURE_UPDATE_PROGRESSION,meterRegistry.gauge("structure.update.progression", new AtomicInteger(0)));
+
+        Counter.builder(SER_FILE)
+                .tags(TIMESTAMP, "")
+                .register(meterRegistry);
     }
 
     /**

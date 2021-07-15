@@ -42,6 +42,18 @@ public class FilesUtils {
         return unzip(zipFilePath, false);
     }
 
+    public static String getDateStringFromFileName(File file) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMddhhmm");
+
+        String regex = ".*(\\d{12}).*";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher m = pattern.matcher(file.getName());
+        if (m.find()) {
+            return m.group(1);
+        }
+        return dateFormatter.format(new Date(0));
+    }
+
     /**
      * Unzip.
      *
@@ -50,7 +62,7 @@ public class FilesUtils {
      * @return true if a new file is found and unzipped successfully
      * @throws IOException io exception
      */
-    protected static boolean unzip(String zipFilePath, boolean clean) throws IOException {
+    public static boolean unzip(String zipFilePath, boolean clean) throws IOException {
         File zip = new File(zipFilePath);
         File destDir = zip.getParentFile();
         File[] existingFiles = zipsTextsNSers(destDir.listFiles()).get("txts").toArray(new File[0]);
@@ -112,12 +124,13 @@ public class FilesUtils {
     }
 
     /**
-     * Cleanup.
+     * Deletes all except latest files.
      *
      * @param filesDirectory the files directory
      * @throws IOException io exception
      */
     public static void cleanup(String filesDirectory) throws IOException {
+        log.info("Cleaning files repository, removing all but latest files");
         Map<String, List<File>> filesMap = zipsTextsNSers(new File(filesDirectory).listFiles());
 
         List<File> listOfZips = filesMap.get("zips");
@@ -130,9 +143,15 @@ public class FilesUtils {
         listOfExtracts.sort(FilesUtils::compare);
         listOfSers.sort(FilesUtils::compare);
 
-        listOfZips.remove(listOfZips.size() -1);
-        listOfExtracts.remove(listOfExtracts.size() -1);
-        listOfSers.remove(listOfSers.size() -1);
+        if (listOfZips.size() > 0) {
+            listOfZips.remove(listOfZips.size() -1);
+        }
+        if (listOfExtracts.size() > 0) {
+            listOfExtracts.remove(listOfExtracts.size() -1);
+        }
+        if (listOfSers.size() > 0) {
+            listOfSers.remove(listOfSers.size() -1);
+        }
 
         for (File file : listOfZips) {
             file.delete();
