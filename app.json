@@ -1,0 +1,7 @@
+{
+  "name": "Spring Boot PscLoad App",
+  "description": "Service de chargement des données du RASS pour PSC.",
+  "repository": "https://github.com/prosanteconnect/pscload",
+  "image": "prosanteconnect/pscload",
+  "addons": [ "heroku-ormongo" ]
+}
