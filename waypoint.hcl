@@ -26,7 +26,10 @@ app "prosanteconnect/pscload" {
              encoded_auth = filebase64("/secrets/dockerAuth.json")
            }
         }
-
+    }
+    
+    url {
+      auto_hostname = true
     }
 
     # Deploy to Nomad
